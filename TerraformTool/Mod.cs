@@ -24,10 +24,14 @@ namespace TerraformTool
     {
 
         public InGameTerrainTool buildTool;
+        
 
         public override void OnLevelLoaded(LoadMode mode)
         {
-
+            if(!(mode == LoadMode.LoadGame || mode == LoadMode.NewGame))
+            {
+                return;
+            }
             try
             {
                 GameObject gameController = GameObject.FindWithTag("GameController");
@@ -37,30 +41,27 @@ namespace TerraformTool
                     buildTool = gameController.AddComponent<InGameTerrainTool>();
 
                     Texture2D tex = new Texture2D(64, 64, TextureFormat.ARGB32, false);
-                    tex.filterMode = FilterMode.Bilinear;
-
+                    tex.filterMode = FilterMode.Bilinear;                    
+                                        
                     { // LoadTexture
                         System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                        System.IO.Stream textureStream = assembly.GetManifestResourceStream("TerraformTool.rt_dump_builtin_brush_4.png");
+                        System.IO.Stream textureStream = assembly.GetManifestResourceStream("TerraformTool.builtin_brush_4.png");
 
                         byte[] buf = new byte[textureStream.Length];  //declare arraysize
                         textureStream.Read(buf, 0, buf.Length); // read from stream to byte array
 
                         tex.LoadImage(buf);
 
-                        tex.Apply(true, true);
+                        // Do not make read only !
+                        tex.Apply();
                     }
-                    if(tex != null)
-                    {
-                        Log.debug("texture loaded");
-                    }
-                    
+
                     buildTool.m_brush = tex;
                     UIView v = UIView.GetAView();
                     buildTool.m_mode = TerrainTool.Mode.Level;
                     buildTool.m_brushSize = 25;
                     buildTool.m_strength = 0.5f;
-
+                    buildTool.enabled = false;
                 }
             }
             catch (Exception e)
@@ -69,10 +70,10 @@ namespace TerraformTool
             }
 
 
-            //buildTool = ToolsModifierControl.toolController.gameObject.GetComponent<TerrainTool>();
-
-
-
+            CreateButtons();
+        }
+        void CreateButtons()
+        {
             UIView uiView = UIView.GetAView();
 
             // Add a new button to the view.
@@ -117,17 +118,6 @@ namespace TerraformTool
             // Place the button2.
             button2.transformPosition = new Vector3(-1.45f, 0.97f);
             button2.eventClick += toggleQueryTool2;
-
-
-            if (buildTool != null)
-            {
-                ToolsModifierControl.toolController.CurrentTool = buildTool;
-                DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Message, buildTool.ToString());
-            }
-            else
-            {
-                DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Message, "Failed to init tool");
-            }
         }
 
 
@@ -135,12 +125,14 @@ namespace TerraformTool
         {
             buildTool.enabled = true;
             buildTool.m_mode = TerrainTool.Mode.Shift;
+            buildTool.m_strength = 0.01f;
         }
 
         void toggleQueryTool(UIComponent component, UIMouseEventParameter eventParam)
         {
             buildTool.enabled = true;
             buildTool.m_mode = TerrainTool.Mode.Level;
+            buildTool.m_strength = 0.5f;
         }
 
 
