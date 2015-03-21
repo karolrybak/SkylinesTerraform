@@ -146,6 +146,7 @@ namespace TerraformTool
                     backupHeights[num] = rawHeights[num];
                 }
             }
+            Singleton<TerrainManager>.instance.TransparentWater = true;
         }
         private void OnLevelLoaded(SimulationManager.UpdateMode mode)
         {
@@ -159,6 +160,7 @@ namespace TerraformTool
             this.m_mouseLeftDown = false;
             this.m_mouseRightDown = false;
             this.m_mouseRayValid = false;
+            Singleton<TerrainManager>.instance.TransparentWater = false;
         }
         protected override void OnDestroy()
         {
@@ -209,7 +211,7 @@ namespace TerraformTool
                 this.m_strokeEnded = false;
                 this.m_strokeInProgress = false;
 
-                updateCash();
+                updateCash(m_totalCost);
             }
             else if (this.m_mouseRayValid && ToolBase.RayCast(input, out raycastOutput))
             {
@@ -221,24 +223,22 @@ namespace TerraformTool
                 }
             }
         }
-        private void updateCash()
+        private void updateCash(int cost)
         {
-            Log.debug("Dreductign");
-            
-            int cost = m_totalCost * m_costMultiplier;
-            Log.debug(cost.ToString());
-            if (cost < Singleton<EconomyManager>.instance.InternalCashAmount)
-            {
-                Singleton<EconomyManager>.instance.FetchResource(EconomyManager.Resource.Construction, cost, ItemClass.Service.None,
-                                       ItemClass.SubService.None,
-                                       ItemClass.Level.None);
-            }
-            else
+            cost *= m_costMultiplier;
+
+            int availableMoney = Singleton<EconomyManager>.instance.PeekResource(EconomyManager.Resource.Construction, cost);
+            Singleton<EconomyManager>.instance.FetchResource(EconomyManager.Resource.Construction, cost, ItemClass.Service.None,
+                       ItemClass.SubService.None,
+                       ItemClass.Level.None);
+
+            if (availableMoney != cost)
             {
                 ApplyUndo();
             }
+            
             m_totalCost = 0;
-        }
+        }        
         private int GetFreeUndoSpace()
         {
             int num = Singleton<TerrainManager>.instance.UndoBuffer.Length;
@@ -338,11 +338,8 @@ namespace TerraformTool
             this.m_strokeXmin = 1080;
             this.m_strokeXmax = 0;
             this.m_strokeZmin = 1080;
-            this.m_strokeZmax = 0;            
-            int cost = undoStroke.total_cost * m_costMultiplier;            
-            Singleton<EconomyManager>.instance.FetchResource(EconomyManager.Resource.Construction, -cost, ItemClass.Service.None,
-                                       ItemClass.SubService.None,
-                                       ItemClass.Level.None);
+            this.m_strokeZmax = 0;
+            updateCash(-undoStroke.total_cost);            
         }
         private void ApplyBrush()
         {

@@ -58,6 +58,9 @@
   <ItemGroup>
     <EmbeddedResource Include="builtin_brush_4.png" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="spritesheet.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>mkdir "%25LOCALAPPDATA%25\Colossal Order\Cities_Skylines\Addons\Mods\$(SolutionName)"

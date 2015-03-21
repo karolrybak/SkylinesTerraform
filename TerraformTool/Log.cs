@@ -11,7 +11,7 @@ namespace TerraformTool
         [MethodImpl(MethodImplOptions.Synchronized)]
         public static void debug(string message)
         {
-            DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Message, message);
+            //DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Message, message);
         }
 
         
