@@ -50,7 +50,7 @@ namespace TerraformTool
         private bool m_undoRequest;
         private SavedInputKey m_UndoKey = new SavedInputKey(Settings.mapEditorTerrainUndo, Settings.inputSettingsFile, DefaultSettings.mapEditorTerrainUndo, true);
         private int m_totalCost;
-        private int m_costMultiplier = 500;
+        private int m_costMultiplier = 1;
         public bool IsUndoAvailable()
         {
             return this.m_undoList != null && this.m_undoList.Count > 0;
@@ -61,7 +61,10 @@ namespace TerraformTool
         }
         public void ResetUndoBuffer()
         {
+            BuildingAI bb = new BuildingAI();
+            
             this.m_undoList.Clear();
+            
             ushort[] backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
             ushort[] rawHeights = Singleton<TerrainManager>.instance.RawHeights;
             for (int i = 0; i <= 1080; i++)
@@ -84,7 +87,8 @@ namespace TerraformTool
         }
         protected override void OnToolGUI()
         {
-            Event current = Event.current;
+            Event current = Event.current;            
+
             if (!this.m_toolController.IsInsideUI && current.type == EventType.MouseDown)
             {
                 if (current.button == 0)
@@ -123,9 +127,16 @@ namespace TerraformTool
                     }
                 }
             }
+            if (current.type == EventType.KeyDown && current.keyCode == KeyCode.Escape && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
+            {
+                current.Use();
+                this.enabled = false;
+                
+            }
             if (this.m_UndoKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown && this.IsUndoAvailable())
             {
                 this.Undo();
+                
             }
         }
         protected override void OnEnable()
@@ -161,6 +172,7 @@ namespace TerraformTool
             this.m_mouseRightDown = false;
             this.m_mouseRayValid = false;
             Singleton<TerrainManager>.instance.TransparentWater = false;
+            ResetUndoBuffer();
         }
         protected override void OnDestroy()
         {
@@ -210,8 +222,6 @@ namespace TerraformTool
                 this.EndStroke();
                 this.m_strokeEnded = false;
                 this.m_strokeInProgress = false;
-
-                updateCash(m_totalCost);
             }
             else if (this.m_mouseRayValid && ToolBase.RayCast(input, out raycastOutput))
             {
@@ -219,26 +229,12 @@ namespace TerraformTool
                 if (this.m_mouseLeftDown != this.m_mouseRightDown)
                 {
                     this.m_strokeInProgress = true;
-                    this.ApplyBrush();
+                    ApplyBrush();
                 }
             }
         }
-        private void updateCash(int cost)
-        {
-            cost *= m_costMultiplier;
 
-            int availableMoney = Singleton<EconomyManager>.instance.PeekResource(EconomyManager.Resource.Construction, cost);
-            Singleton<EconomyManager>.instance.FetchResource(EconomyManager.Resource.Construction, cost, ItemClass.Service.None,
-                       ItemClass.SubService.None,
-                       ItemClass.Level.None);
-
-            if (availableMoney != cost)
-            {
-                ApplyUndo();
-            }
-            
-            m_totalCost = 0;
-        }        
+        
         private int GetFreeUndoSpace()
         {
             int num = Singleton<TerrainManager>.instance.UndoBuffer.Length;
@@ -339,7 +335,7 @@ namespace TerraformTool
             this.m_strokeXmax = 0;
             this.m_strokeZmin = 1080;
             this.m_strokeZmax = 0;
-            updateCash(-undoStroke.total_cost);            
+                  
         }
         private void ApplyBrush()
         {
@@ -362,10 +358,10 @@ namespace TerraformTool
                 num7 = 1f / num7;
             }
             float num8 = 20f;
-            int num9 = Mathf.Max((int)((mousePosition.x - num) / num2 + (float)num3 * 0.5f), 0);
-            int num10 = Mathf.Max((int)((mousePosition.z - num) / num2 + (float)num3 * 0.5f), 0);
-            int num11 = Mathf.Min((int)((mousePosition.x + num) / num2 + (float)num3 * 0.5f) + 1, num3);
-            int num12 = Mathf.Min((int)((mousePosition.z + num) / num2 + (float)num3 * 0.5f) + 1, num3);
+            int minX = Mathf.Max((int)((mousePosition.x - num) / num2 + (float)num3 * 0.5f), 0);
+            int minZ = Mathf.Max((int)((mousePosition.z - num) / num2 + (float)num3 * 0.5f), 0);
+            int maxX = Mathf.Min((int)((mousePosition.x + num) / num2 + (float)num3 * 0.5f) + 1, num3);
+            int maxZ = Mathf.Min((int)((mousePosition.z + num) / num2 + (float)num3 * 0.5f) + 1, num3);
             if (this.m_mode == TerrainTool.Mode.Shift)
             {
                 if (this.m_mouseRightDown)
@@ -377,12 +373,12 @@ namespace TerraformTool
             {
                 num4 = 10;
             }
-            for (int i = num10; i <= num12; i++)
+            for (int i = minZ; i <= maxZ; i++)
             {
                 float num13 = (((float)i - (float)num3 * 0.5f) * num2 - mousePosition.z + num) / this.m_brushSize * 64f - 0.5f;
                 int num14 = Mathf.Clamp(Mathf.FloorToInt(num13), 0, 63);
                 int num15 = Mathf.Clamp(Mathf.CeilToInt(num13), 0, 63);
-                for (int j = num9; j <= num11; j++)
+                for (int j = minX; j <= maxX; j++)
                 {
                     float num16 = (((float)j - (float)num3 * 0.5f) * num2 - mousePosition.x + num) / this.m_brushSize * 64f - 0.5f;
                     int num17 = Mathf.Clamp(Mathf.FloorToInt(num16), 0, 63);
@@ -436,7 +432,8 @@ namespace TerraformTool
                     ushort orig = rawHeights[i * (num3 + 1) + j];
                     rawHeights[i * (num3 + 1) + j] = (ushort)Mathf.Clamp(Mathf.RoundToInt(num27 * num6), 0, 65535);
 
-                    m_totalCost += Mathf.Abs(orig - rawHeights[i * (num3 + 1) + j]);
+                    m_totalCost += Mathf.Abs(orig - rawHeights[i * (num3 + 1) + j]) * m_costMultiplier;
+
                     this.m_strokeXmin = Math.Min(this.m_strokeXmin, j);
                     this.m_strokeXmax = Math.Max(this.m_strokeXmax, j);
                     this.m_strokeZmin = Math.Min(this.m_strokeZmin, i);
@@ -444,7 +441,7 @@ namespace TerraformTool
                 }
             }
             //Log.debug(m_totalCost.ToString());
-            TerrainModify.UpdateArea(num9, num10, num11, num12, true, false, false);
+            TerrainModify.UpdateArea(minX, minZ, maxX, maxZ, true, false, false);
         }
     }
 

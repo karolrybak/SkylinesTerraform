@@ -9,7 +9,6 @@ namespace TerraformTool
 {
     public class Mod : IUserMod
     {
-
         public string Description
         {
             get { return "Allows terraforming in game."; }
@@ -20,7 +19,8 @@ namespace TerraformTool
             get { return "Terraform Tool"; }
         }
     }
-    public class LoadingExtension : LoadingExtensionBase
+
+    public class LoadingExtension : LoadingExtensionBase, IThreadingExtension
     {
 
         public InGameTerrainTool buildTool;
@@ -138,8 +138,7 @@ namespace TerraformTool
                         tex.Apply();
                     }
 
-                    buildTool.m_brush = tex;
-                    UIView v = UIView.GetAView();
+                    buildTool.m_brush = tex;                    
                     buildTool.m_mode = TerrainTool.Mode.Level;
                     buildTool.m_brushSize = 25;
                     buildTool.m_strength = 0.5f;
@@ -155,7 +154,7 @@ namespace TerraformTool
             CreateButtons();
         }
 
-        void InitButton(UIButton button, string texture, Vector3 position)
+        void InitButton(UIButton button, string texture, int position)
         {
             button.width = 60;
             button.height = 41;
@@ -165,27 +164,44 @@ namespace TerraformTool
             button.hoveredBgSprite = texture + "Hovered";
             button.focusedBgSprite = texture + "Focused";
             button.pressedBgSprite = texture + "Pressed";
-            // Place the button.
-            button.transformPosition = position;
+            // Place the button.            
             button.atlas = terraform_atlas;
             button.eventClick += toggleTerraform;
+
+            UIView uiView = UIView.GetAView();
+            UIComponent refButton = uiView.FindUIComponent("BulldozerButton");
+
+            button.relativePosition = new Vector2
+            (
+                refButton.relativePosition.x + refButton.width / 2.0f - button.width * position - refButton.width - 8.0f,
+                refButton.relativePosition.y + refButton.height / 2.0f - button.height / 2.0f
+            );
         }
 
         void CreateButtons()
         {
             UIView uiView = UIView.GetAView();
 
-            btLevel = (UIButton)uiView.AddUIComponent(typeof(UIButton));
-            InitButton(btLevel, "TerrainLevel", new Vector3(1.25f, -0.84f));
+            UIComponent refButton = uiView.FindUIComponent("BulldozerButton");
 
-            btShift = (UIButton)uiView.AddUIComponent(typeof(UIButton));
-            InitButton(btShift, "TerrainShift", new Vector3(1.35f, -0.84f));
+            UIComponent tsBar = uiView.FindUIComponent("TSBar");
+            
+            if(btLevel == null)
+            {
+                btLevel = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
+                
+                InitButton(btLevel, "TerrainLevel", 4);
 
-            btSoften = (UIButton)uiView.AddUIComponent(typeof(UIButton));
-            InitButton(btSoften, "TerrainSoften", new Vector3(1.45f, -0.84f));
+                btShift = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
+                InitButton(btShift, "TerrainShift", 3);
 
-            btSlope = (UIButton)uiView.AddUIComponent(typeof(UIButton));
-            InitButton(btSlope, "TerrainSlope", new Vector3(1.55f, -0.84f));
+                btSoften = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
+                InitButton(btSoften, "TerrainSoften", 2);
+
+                btSlope = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
+                InitButton(btSlope, "TerrainSlope", 1);
+
+            }
 
         }
 
@@ -223,6 +239,58 @@ namespace TerraformTool
         }
 
 
+
+        public void OnAfterSimulationFrame()
+        {
+            
+        }
+
+        public void OnAfterSimulationTick()
+        {
+            
+        }
+
+        public void OnBeforeSimulationFrame()
+        {
+            
+        }
+
+        public void OnBeforeSimulationTick()
+        {
+            
+        }
+
+        public void OnCreated(IThreading threading)
+        {
+            
+        }
+
+        public void OnUpdate(float realTimeDelta, float simulationTimeDelta)
+        {
+            InGameTerrainTool terraformTool = ToolsModifierControl.toolController.CurrentTool as InGameTerrainTool;
+            if(Input.GetKeyDown(KeyCode.UpArrow))
+            {
+                terraformTool.m_strength = Mathf.Min(1, terraformTool.m_strength + 0.05f);
+            }
+            if (Input.GetKeyDown(KeyCode.DownArrow))
+            {
+                terraformTool.m_strength = Mathf.Max(0.01f, terraformTool.m_strength - 0.05f);;
+
+            }
+
+            if (Input.GetKeyDown(KeyCode.LeftArrow))
+            {
+                terraformTool.m_brushSize = Mathf.Max(25, terraformTool.m_brushSize - 5);
+
+            }
+
+            if (Input.GetKeyDown(KeyCode.RightArrow))
+            {
+                terraformTool.m_brushSize = Mathf.Min(1250, terraformTool.m_brushSize + 5);
+
+            }
+
+        }
     }
 
 }
