@@ -1,4 +1,6 @@
-﻿using ColossalFramework;
+﻿using ColossalFramework.IO;
+using ColossalFramework;
+using System.IO;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -23,7 +25,21 @@ namespace TerraformTool
             public int pointer;
             public int total_cost;
         }
-        public TerrainTool.Mode m_mode;
+        private struct ToolSettings
+        {
+            public ToolSettings(float m_brushSize, float m_strength)
+            {
+                this.m_strength = m_strength;
+                this.m_brushSize = m_brushSize;
+            }
+            public float m_brushSize;
+            public float m_strength;
+
+        }
+        private Dictionary<InGameTerrainTool.Mode, ToolSettings> ModeSettings;
+
+        public InGameTerrainTool.Mode m_mode;
+        public bool m_free = false;
         public float m_brushSize = 1f;
         public float m_strength = 0.5f;
         public Texture2D m_brush;
@@ -48,9 +64,36 @@ namespace TerraformTool
         private List<InGameTerrainTool.UndoStroke> m_undoList;
         private bool m_strokeInProgress;
         private bool m_undoRequest;
+        private long m_lastCash;
+
         private SavedInputKey m_UndoKey = new SavedInputKey(Settings.mapEditorTerrainUndo, Settings.inputSettingsFile, DefaultSettings.mapEditorTerrainUndo, true);
-        private int m_totalCost;
-        private int m_costMultiplier = 1;
+        private SavedInputKey m_IncreaseBrushSizeKey = new SavedInputKey(Settings.mapEditorIncreaseBrushSize, Settings.inputSettingsFile, DefaultSettings.mapEditorIncreaseBrushSize, true);
+        private SavedInputKey m_DecreaseBrushSizeKey = new SavedInputKey(Settings.mapEditorDecreaseBrushSize, Settings.inputSettingsFile, DefaultSettings.mapEditorDecreaseBrushSize, true);
+        private SavedInputKey m_IncreaseBrushStrengthKey = new SavedInputKey(Settings.mapEditorIncreaseBrushStrength, Settings.inputSettingsFile, DefaultSettings.mapEditorIncreaseBrushStrength, true);
+        private SavedInputKey m_DecreaseBrushStrengthKey = new SavedInputKey(Settings.mapEditorDecreaseBrushStrength, Settings.inputSettingsFile, DefaultSettings.mapEditorDecreaseBrushStrength, true);
+
+        private long m_totalCost;
+        private int m_costMultiplier = 500;
+        public static ConfigData Myconfig;
+
+        public InGameTerrainTool()
+        {
+            if (InGameTerrainTool.Myconfig == null & File.Exists(ConfigData.GetConfigPath()))
+            {
+                InGameTerrainTool.Myconfig = ConfigData.Deserialize();
+            }
+            else
+            {
+                //InGameTerrainTool.Myconfig = new ConfigData();
+                //ConfigData.Serialize(InGameTerrainTool.Myconfig);
+            }
+            if (InGameTerrainTool.Myconfig != null)
+            {
+                this.m_costMultiplier = InGameTerrainTool.Myconfig.MoneyModifer;
+                this.m_free = InGameTerrainTool.Myconfig.Free;
+            }
+        }
+
         public bool IsUndoAvailable()
         {
             return this.m_undoList != null && this.m_undoList.Count > 0;
@@ -59,12 +102,19 @@ namespace TerraformTool
         {
             this.m_undoRequest = true;
         }
+
+        public override void RenderOverlay(RenderManager.CameraInfo cameraInfo)
+        {
+
+            base.RenderOverlay(cameraInfo);
+        }
+
         public void ResetUndoBuffer()
         {
             BuildingAI bb = new BuildingAI();
-            
+
             this.m_undoList.Clear();
-            
+
             ushort[] backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
             ushort[] rawHeights = Singleton<TerrainManager>.instance.RawHeights;
             for (int i = 0; i <= 1080; i++)
@@ -79,30 +129,50 @@ namespace TerraformTool
         protected override void Awake()
         {
             base.Awake();
+            ModeSettings = new Dictionary<Mode, ToolSettings>();
+            ModeSettings[Mode.Level] = new ToolSettings(25, 0.5f);
+            ModeSettings[Mode.Shift] = new ToolSettings(25, 0.01f);
+            ModeSettings[Mode.Soften] = new ToolSettings(50, 0.5f);
+            ModeSettings[Mode.Slope] = new ToolSettings(25, 0.5f);
+
             this.m_undoList = new List<InGameTerrainTool.UndoStroke>();
             if (Singleton<LoadingManager>.exists)
             {
                 Singleton<LoadingManager>.instance.m_levelLoaded += new LoadingManager.LevelLoadedHandler(this.OnLevelLoaded);
             }
         }
+        public void ApplySettings()
+        {
+            this.m_strength = ModeSettings[m_mode].m_strength;
+            this.m_brushSize = ModeSettings[m_mode].m_brushSize;
+        }
+
+        private void UpdateSettings()
+        {
+            ModeSettings[this.m_mode] = new ToolSettings(m_brushSize, m_strength);
+        }
+
         protected override void OnToolGUI()
         {
-            Event current = Event.current;            
+            Event current = Event.current;
 
             if (!this.m_toolController.IsInsideUI && current.type == EventType.MouseDown)
             {
                 if (current.button == 0)
                 {
+                    m_lastCash = EconomyManager.instance.LastCashAmount;
+
+
                     this.m_mouseLeftDown = true;
                     this.m_endPosition = this.m_mousePosition;
                 }
                 else if (current.button == 1)
                 {
-                    if (this.m_mode == TerrainTool.Mode.Shift || this.m_mode == TerrainTool.Mode.Soften)
+                    if (this.m_mode == InGameTerrainTool.Mode.Shift || this.m_mode == InGameTerrainTool.Mode.Soften)
                     {
                         this.m_mouseRightDown = true;
                     }
-                    else if (this.m_mode == TerrainTool.Mode.Level || this.m_mode == TerrainTool.Mode.Slope)
+                    else if (this.m_mode == InGameTerrainTool.Mode.Level || this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
                         this.m_startPosition = this.m_mousePosition;
                     }
@@ -131,12 +201,31 @@ namespace TerraformTool
             {
                 current.Use();
                 this.enabled = false;
-                
+
             }
             if (this.m_UndoKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown && this.IsUndoAvailable())
             {
                 this.Undo();
-                
+            }
+            if (this.m_IncreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
+            {
+                m_brushSize = Mathf.Min(1250, m_brushSize + 5);
+                UpdateSettings();
+            }
+            if (this.m_DecreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
+            {
+                m_brushSize = Mathf.Max(25, m_brushSize - 5);
+                UpdateSettings();
+            }
+            if (this.m_IncreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
+            {
+                m_strength = Mathf.Min(1, m_strength + 0.05f);
+                UpdateSettings();
+            }
+            if (this.m_DecreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
+            {
+                m_strength = Mathf.Max(0.01f, m_strength - 0.05f);
+                UpdateSettings();
             }
         }
         protected override void OnEnable()
@@ -147,8 +236,8 @@ namespace TerraformTool
             this.m_strokeXmax = 0;
             this.m_strokeZmin = 1080;
             this.m_strokeZmax = 0;
-            ushort[] backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
-            ushort[] rawHeights = Singleton<TerrainManager>.instance.RawHeights;
+            ushort[] backupHeights = TerrainManager.instance.BackupHeights;
+            ushort[] rawHeights = TerrainManager.instance.RawHeights;
             for (int i = 0; i <= 1080; i++)
             {
                 for (int j = 0; j <= 1080; j++)
@@ -157,7 +246,7 @@ namespace TerraformTool
                     backupHeights[num] = rawHeights[num];
                 }
             }
-            Singleton<TerrainManager>.instance.TransparentWater = true;
+            TerrainManager.instance.TransparentWater = true;
         }
         private void OnLevelLoaded(SimulationManager.UpdateMode mode)
         {
@@ -186,28 +275,39 @@ namespace TerraformTool
         {
             switch (this.m_mode)
             {
-                case TerrainTool.Mode.Shift:
+                case InGameTerrainTool.Mode.Shift:
                     base.ToolCursor = this.m_shiftCursor;
                     break;
-                case TerrainTool.Mode.Level:
+                case InGameTerrainTool.Mode.Level:
                     base.ToolCursor = this.m_levelCursor;
                     break;
-                case TerrainTool.Mode.Soften:
+                case InGameTerrainTool.Mode.Soften:
                     base.ToolCursor = this.m_softenCursor;
                     break;
-                case TerrainTool.Mode.Slope:
+                case InGameTerrainTool.Mode.Slope:
                     base.ToolCursor = this.m_slopeCursor;
                     break;
             }
         }
+
         protected override void OnToolLateUpdate()
         {
+            if (EconomyManager.instance.LastCashAmount == Int64.MaxValue)
+            {
+                m_free = true;
+            }
+            else
+            {
+                m_free = false;
+            }
+
             Vector3 mousePosition = Input.mousePosition;
             this.m_mouseRay = Camera.main.ScreenPointToRay(mousePosition);
             this.m_mouseRayLength = Camera.main.farClipPlane;
             this.m_mouseRayValid = (!this.m_toolController.IsInsideUI && Cursor.visible);
             this.m_toolController.SetBrush(this.m_brush, this.m_mousePosition, this.m_brushSize);
         }
+
         public override void SimulationStep()
         {
             ToolBase.RaycastInput input = new ToolBase.RaycastInput(this.m_mouseRay, this.m_mouseRayLength);
@@ -234,7 +334,7 @@ namespace TerraformTool
             }
         }
 
-        
+
         private int GetFreeUndoSpace()
         {
             int num = Singleton<TerrainManager>.instance.UndoBuffer.Length;
@@ -260,7 +360,7 @@ namespace TerraformTool
             }
             if (num3 >= 10000)
             {
-                Debug.Log("TerrainTool:EndStroke: unexpectedly terminated freeing loop, might be a bug.");
+                Debug.Log("InGameTerrainTool:EndStroke: unexpectedly terminated freeing loop, might be a bug.");
                 return;
             }
             InGameTerrainTool.UndoStroke item = default(InGameTerrainTool.UndoStroke);
@@ -268,7 +368,7 @@ namespace TerraformTool
             item.xmax = this.m_strokeXmax;
             item.zmin = this.m_strokeZmin;
             item.zmax = this.m_strokeZmax;
-            item.total_cost = m_totalCost;
+            item.total_cost = (int)m_totalCost;
             item.pointer = this.m_undoBufferFreePointer;
             this.m_undoList.Add(item);
             ushort[] undoBuffer = Singleton<TerrainManager>.instance.UndoBuffer;
@@ -288,6 +388,7 @@ namespace TerraformTool
             this.m_strokeXmax = 0;
             this.m_strokeZmin = 1080;
             this.m_strokeZmax = 0;
+            this.m_totalCost = 0;
         }
         public void ApplyUndo()
         {
@@ -335,20 +436,30 @@ namespace TerraformTool
             this.m_strokeXmax = 0;
             this.m_strokeZmin = 1080;
             this.m_strokeZmax = 0;
-                  
+            if ( m_free != true )
+            {
+                EconomyManager.instance.FetchResource(EconomyManager.Resource.Construction, -undoStroke.total_cost, ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Level.None);
+            }
+
         }
         private void ApplyBrush()
         {
+            long m_applyCost = 0;
+            bool outOfMoney = false;
+            bool applied = false;
             float[] brushData = this.m_toolController.BrushData;
             float num = this.m_brushSize * 0.5f;
             float num2 = 16f;
             int num3 = 1080;
-            ushort[] rawHeights = Singleton<TerrainManager>.instance.RawHeights;
-            ushort[] finalHeights = Singleton<TerrainManager>.instance.FinalHeights;
+            ushort[] rawHeights = TerrainManager.instance.RawHeights;
+            ushort[] finalHeights = TerrainManager.instance.FinalHeights;
+
             float strength = this.m_strength;
-            int num4 = 3;
+            int smoothStrength = 3;
+
             float num5 = 0.015625f;
             float num6 = 64f;
+
             Vector3 mousePosition = this.m_mousePosition;
             Vector3 vector = this.m_endPosition - this.m_startPosition;
             vector.y = 0f;
@@ -362,16 +473,16 @@ namespace TerraformTool
             int minZ = Mathf.Max((int)((mousePosition.z - num) / num2 + (float)num3 * 0.5f), 0);
             int maxX = Mathf.Min((int)((mousePosition.x + num) / num2 + (float)num3 * 0.5f) + 1, num3);
             int maxZ = Mathf.Min((int)((mousePosition.z + num) / num2 + (float)num3 * 0.5f) + 1, num3);
-            if (this.m_mode == TerrainTool.Mode.Shift)
+            if (this.m_mode == InGameTerrainTool.Mode.Shift)
             {
                 if (this.m_mouseRightDown)
                 {
                     num8 = -num8;
                 }
             }
-            else if (this.m_mode == TerrainTool.Mode.Soften && this.m_mouseRightDown)
+            else if (this.m_mode == InGameTerrainTool.Mode.Soften && this.m_mouseRightDown)
             {
-                num4 = 10;
+                smoothStrength = 10;
             }
             for (int i = minZ; i <= maxZ; i++)
             {
@@ -392,26 +503,26 @@ namespace TerraformTool
                     float num25 = num23 + (num24 - num23) * (num13 - (float)num14);
                     float num26 = (float)rawHeights[i * (num3 + 1) + j] * num5;
                     float num27 = 0f;
-                    if (this.m_mode == TerrainTool.Mode.Shift)
+                    if (this.m_mode == InGameTerrainTool.Mode.Shift)
                     {
                         num27 = num26 + num8;
                     }
-                    else if (this.m_mode == TerrainTool.Mode.Level)
+                    else if (this.m_mode == InGameTerrainTool.Mode.Level)
                     {
                         num27 = this.m_startPosition.y;
                     }
-                    else if (this.m_mode == TerrainTool.Mode.Soften)
+                    else if (this.m_mode == InGameTerrainTool.Mode.Soften)
                     {
-                        int num28 = Mathf.Max(j - num4, 0);
-                        int num29 = Mathf.Max(i - num4, 0);
-                        int num30 = Mathf.Min(j + num4, num3);
-                        int num31 = Mathf.Min(i + num4, num3);
+                        int num28 = Mathf.Max(j - smoothStrength, 0);
+                        int num29 = Mathf.Max(i - smoothStrength, 0);
+                        int num30 = Mathf.Min(j + smoothStrength, num3);
+                        int num31 = Mathf.Min(i + smoothStrength, num3);
                         float num32 = 0f;
                         for (int k = num29; k <= num31; k++)
                         {
                             for (int l = num28; l <= num30; l++)
                             {
-                                float num33 = 1f - (float)((l - j) * (l - j) + (k - i) * (k - i)) / (float)(num4 * num4);
+                                float num33 = 1f - (float)((l - j) * (l - j) + (k - i) * (k - i)) / (float)(smoothStrength * smoothStrength);
                                 if (num33 > 0f)
                                 {
                                     num27 += (float)finalHeights[k * (num3 + 1) + l] * (num5 * num33);
@@ -421,7 +532,7 @@ namespace TerraformTool
                         }
                         num27 /= num32;
                     }
-                    else if (this.m_mode == TerrainTool.Mode.Slope)
+                    else if (this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
                         float num34 = ((float)j - (float)num3 * 0.5f) * num2;
                         float num35 = ((float)i - (float)num3 * 0.5f) * num2;
@@ -430,18 +541,42 @@ namespace TerraformTool
                     }
                     num27 = Mathf.Lerp(num26, num27, strength * num25);
                     ushort orig = rawHeights[i * (num3 + 1) + j];
-                    rawHeights[i * (num3 + 1) + j] = (ushort)Mathf.Clamp(Mathf.RoundToInt(num27 * num6), 0, 65535);
 
-                    m_totalCost += Mathf.Abs(orig - rawHeights[i * (num3 + 1) + j]) * m_costMultiplier;
 
-                    this.m_strokeXmin = Math.Min(this.m_strokeXmin, j);
-                    this.m_strokeXmax = Math.Max(this.m_strokeXmax, j);
-                    this.m_strokeZmin = Math.Min(this.m_strokeZmin, i);
-                    this.m_strokeZmax = Math.Max(this.m_strokeZmax, i);
+                    var oldHeight = rawHeights[i * (num3 + 1) + j];
+                    var newHeight = (ushort)Mathf.Clamp(Mathf.RoundToInt(num27 * num6), 0, 65535);
+
+                    if (!outOfMoney)
+                        m_applyCost += Mathf.Abs(newHeight - oldHeight) * m_costMultiplier;
+
+                    if ((m_applyCost + m_totalCost < m_lastCash && m_applyCost + m_totalCost < Int32.MaxValue) || m_free == true)
+                    {
+                        rawHeights[i * (num3 + 1) + j] = newHeight;
+                        this.m_strokeXmin = Math.Min(this.m_strokeXmin, j);
+                        this.m_strokeXmax = Math.Max(this.m_strokeXmax, j);
+                        this.m_strokeZmin = Math.Min(this.m_strokeZmin, i);
+                        this.m_strokeZmax = Math.Max(this.m_strokeZmax, i);
+                        applied = true;
+                    }
+                    else
+                    {
+                        outOfMoney = true;
+                    }
+                    
                 }
             }
-            //Log.debug(m_totalCost.ToString());
             TerrainModify.UpdateArea(minX, minZ, maxX, maxZ, true, false, false);
+            if(applied)
+            {
+                if (m_free != true)
+                {
+                    EconomyManager.instance.FetchResource(EconomyManager.Resource.Construction, (int)m_applyCost, ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Level.None);
+                    m_totalCost += m_applyCost;
+                }
+            }
+            
+
+
         }
     }
 

@@ -20,9 +20,9 @@ namespace TerraformTool
         }
     }
 
-    public class LoadingExtension : LoadingExtensionBase, IThreadingExtension
+    public class LoadingExtension : LoadingExtensionBase
     {
-
+        
         public InGameTerrainTool buildTool;
         public UITextureAtlas terraform_atlas;
 
@@ -118,8 +118,7 @@ namespace TerraformTool
                 LoadResources();
                 GameObject gameController = GameObject.FindWithTag("GameController");
                 if (gameController)
-                {
-                    //Log.debug(gameController.ToString());
+                {                    
                     buildTool = gameController.AddComponent<InGameTerrainTool>();
 
                     Texture2D tex = new Texture2D(64, 64, TextureFormat.ARGB32, false);
@@ -139,7 +138,7 @@ namespace TerraformTool
                     }
 
                     buildTool.m_brush = tex;                    
-                    buildTool.m_mode = TerrainTool.Mode.Level;
+                    buildTool.m_mode = InGameTerrainTool.Mode.Level;
                     buildTool.m_brushSize = 25;
                     buildTool.m_strength = 0.5f;
                     buildTool.enabled = false;
@@ -158,13 +157,14 @@ namespace TerraformTool
         {
             button.width = 60;
             button.height = 41;
-            // Style the button to look like a menu button.
+            
             button.normalBgSprite = texture;
             button.disabledBgSprite = texture + "Disabled";
             button.hoveredBgSprite = texture + "Hovered";
             button.focusedBgSprite = texture + "Focused";
             button.pressedBgSprite = texture + "Pressed";
             // Place the button.            
+            
             button.atlas = terraform_atlas;
             button.eventClick += toggleTerraform;
 
@@ -210,86 +210,28 @@ namespace TerraformTool
             if (component == btLevel)
             {                
                 buildTool.enabled = true;
-                buildTool.m_mode = TerrainTool.Mode.Level;
-                buildTool.m_strength = 0.5f;
-                buildTool.m_brushSize = 25f;
+                buildTool.m_mode = InGameTerrainTool.Mode.Level;
+                buildTool.ApplySettings();
             }
             if (component == btShift)
             {
                 buildTool.enabled = true;
-                buildTool.m_mode = TerrainTool.Mode.Shift;
-                buildTool.m_strength = 0.01f;
-                buildTool.m_brushSize = 25f;
+                buildTool.m_mode = InGameTerrainTool.Mode.Shift;
+                buildTool.ApplySettings();
             }
             if (component == btSoften)
             {
                 buildTool.enabled = true;
-                buildTool.m_mode = TerrainTool.Mode.Soften;
-                buildTool.m_strength = 0.02f;
-                buildTool.m_brushSize = 50f;
+                buildTool.m_mode = InGameTerrainTool.Mode.Soften;
+                buildTool.ApplySettings();
             } 
             if (component == btSlope)
             {
                 buildTool.enabled = true;
-                buildTool.m_mode = TerrainTool.Mode.Slope;
-                buildTool.m_strength = 0.5f;
-                buildTool.m_brushSize = 25f;
+                buildTool.m_mode = InGameTerrainTool.Mode.Slope;
+                buildTool.ApplySettings();
             }
             
-        }
-
-
-
-        public void OnAfterSimulationFrame()
-        {
-            
-        }
-
-        public void OnAfterSimulationTick()
-        {
-            
-        }
-
-        public void OnBeforeSimulationFrame()
-        {
-            
-        }
-
-        public void OnBeforeSimulationTick()
-        {
-            
-        }
-
-        public void OnCreated(IThreading threading)
-        {
-            
-        }
-
-        public void OnUpdate(float realTimeDelta, float simulationTimeDelta)
-        {
-            InGameTerrainTool terraformTool = ToolsModifierControl.toolController.CurrentTool as InGameTerrainTool;
-            if(Input.GetKeyDown(KeyCode.UpArrow))
-            {
-                terraformTool.m_strength = Mathf.Min(1, terraformTool.m_strength + 0.05f);
-            }
-            if (Input.GetKeyDown(KeyCode.DownArrow))
-            {
-                terraformTool.m_strength = Mathf.Max(0.01f, terraformTool.m_strength - 0.05f);;
-
-            }
-
-            if (Input.GetKeyDown(KeyCode.LeftArrow))
-            {
-                terraformTool.m_brushSize = Mathf.Max(25, terraformTool.m_brushSize - 5);
-
-            }
-
-            if (Input.GetKeyDown(KeyCode.RightArrow))
-            {
-                terraformTool.m_brushSize = Mathf.Min(1250, terraformTool.m_brushSize + 5);
-
-            }
-
         }
     }
 
