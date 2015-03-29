@@ -1,4 +1,5 @@
 ﻿using ColossalFramework;
+using ColossalFramework.Globalization;
 using ColossalFramework.UI;
 using ICities;
 using System;
@@ -22,19 +23,14 @@ namespace TerraformTool
 
     public class LoadingExtension : LoadingExtensionBase
     {
-        
+
         public InGameTerrainTool buildTool;
         public UITextureAtlas terraform_atlas;
-
-        private UIButton btLevel;
-        private UIButton btShift;
-        private UIButton btSlope;
-        private UIButton btSoften;
-
+        
         public void LoadResources()
         {
-            int spriteWidth = 60;
-            int spriteHeight = 41;
+            //int spriteWidth = 60;
+            //int spriteHeight = 41;
             string[] spriteNames = {
                                            "TerrainLevel", 
                                            "TerrainLevelDisabled", 
@@ -56,11 +52,73 @@ namespace TerraformTool
                                            "TerrainSoftenFocused", 
                                            "TerrainSoftenHovered", 
                                            "TerrainSoftenPressed", 
+                                           "ToolbarIconTerrain", 
+                                           "ToolbarIconTerrainDisabled", 
+                                           "ToolbarIconTerrainFocused", 
+                                           "ToolbarIconTerrainHovered", 
+                                           "ToolbarIconTerrainPressed", 
+                                           "ToolbarIconGroup6Focused", 
+                                           "ToolbarIconGroup6Hovered", 
+                                           "ToolbarIconGroup6Pressed", 
                                        };
 
-            terraform_atlas = CreateTextureAtlas("spritesheet.png", "TerraformUI", UIView.GetAView().defaultAtlas.material, spriteWidth, spriteHeight, spriteNames);
-        }
+            //terraform_atlas = CreateTextureAtlas("spritesheet_2.png", "TerraformUI", UIView.GetAView().defaultAtlas.material, spriteWidth, spriteHeight, spriteNames);
+            terraform_atlas = CreateTextureAtlas2("TerraformUI", UIView.GetAView().defaultAtlas.material, spriteNames, "TerraformTool.icon.");
 
+        }
+        UITextureAtlas CreateTextureAtlas2(string atlasName, Material baseMaterial, string[] spriteNames, string assemblyPath)
+        {
+            Texture2D atlasTex = new Texture2D(1024, 1024, TextureFormat.ARGB32, false);
+
+            Texture2D[] textures = new Texture2D[spriteNames.Length];
+            Rect[] rects = new Rect[spriteNames.Length];
+
+            for(int i = 0; i < spriteNames.Length; i++)
+            {
+                textures[i] = loadTextureFromAssembly(assemblyPath + spriteNames[i] + ".png", false);
+            }
+
+            rects = atlasTex.PackTextures(textures, 2, 1024);
+
+           
+
+            UITextureAtlas atlas = ScriptableObject.CreateInstance<UITextureAtlas>();
+
+            { // Setup atlas
+                Material material = (Material)Material.Instantiate(baseMaterial);
+                material.mainTexture = atlasTex;
+
+                atlas.material = material;
+                atlas.name = atlasName;
+            }
+
+
+            for (int i = 0; i < spriteNames.Length; i++)
+            {
+                var spriteInfo = new UITextureAtlas.SpriteInfo()
+                {
+                    name = spriteNames[i],
+                    texture = atlasTex,
+                    region = rects[i]
+                };
+
+                atlas.AddSprite(spriteInfo);
+            }
+
+            return atlas;
+        }
+        Texture2D loadTextureFromAssembly(string path, bool readOnly = true)
+        {
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            System.IO.Stream textureStream = assembly.GetManifestResourceStream(path);
+
+            byte[] buf = new byte[textureStream.Length];  //declare arraysize
+            textureStream.Read(buf, 0, buf.Length); // read from stream to byte array
+            Texture2D tex = new Texture2D(2,2, TextureFormat.ARGB32, false);
+            tex.LoadImage(buf);
+            tex.Apply(false, readOnly);
+            return tex;
+        }
         UITextureAtlas CreateTextureAtlas(string textureFile, string atlasName, Material baseMaterial, int spriteWidth, int spriteHeight, string[] spriteNames)
         {
 
@@ -69,7 +127,7 @@ namespace TerraformTool
 
             { // LoadTexture
                 System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                System.IO.Stream textureStream = assembly.GetManifestResourceStream("TerraformTool." + textureFile);
+                System.IO.Stream textureStream = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + textureFile);
 
                 byte[] buf = new byte[textureStream.Length];  //declare arraysize
                 textureStream.Read(buf, 0, buf.Length); // read from stream to byte array
@@ -116,123 +174,37 @@ namespace TerraformTool
             try
             {
                 LoadResources();
-                GameObject gameController = GameObject.FindWithTag("GameController");
-                if (gameController)
-                {                    
+                if (buildTool == null)
+                {
+                    GameObject gameController = GameObject.FindWithTag("GameController");
                     buildTool = gameController.AddComponent<InGameTerrainTool>();
 
-                    Texture2D tex = new Texture2D(64, 64, TextureFormat.ARGB32, false);
-                    tex.filterMode = FilterMode.Bilinear;
 
-                    { // LoadTexture
-                        System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-                        System.IO.Stream textureStream = assembly.GetManifestResourceStream("TerraformTool.builtin_brush_4.png");
+                    Texture2D tex = loadTextureFromAssembly("TerraformTool.builtin_brush_4.png", false);
 
-                        byte[] buf = new byte[textureStream.Length];  //declare arraysize
-                        textureStream.Read(buf, 0, buf.Length); // read from stream to byte array
 
-                        tex.LoadImage(buf);
-
-                        // Do not make read only !
-                        tex.Apply();
-                    }
-
-                    buildTool.m_brush = tex;                    
+                    buildTool.m_atlas = terraform_atlas;
+                    buildTool.CreateButtons();
+                    buildTool.m_brush = tex;
                     buildTool.m_mode = InGameTerrainTool.Mode.Level;
                     buildTool.m_brushSize = 25;
                     buildTool.m_strength = 0.5f;
                     buildTool.enabled = false;
                 }
+
+
+
             }
             catch (Exception e)
             {
-                Log.debug(e.ToString());
+                Debug.Log(e.ToString());
             }
 
 
-            CreateButtons();
-        }
-
-        void InitButton(UIButton button, string texture, int position)
-        {
-            button.width = 60;
-            button.height = 41;
-            
-            button.normalBgSprite = texture;
-            button.disabledBgSprite = texture + "Disabled";
-            button.hoveredBgSprite = texture + "Hovered";
-            button.focusedBgSprite = texture + "Focused";
-            button.pressedBgSprite = texture + "Pressed";
-            // Place the button.            
-            
-            button.atlas = terraform_atlas;
-            button.eventClick += toggleTerraform;
-
-            UIView uiView = UIView.GetAView();
-            UIComponent refButton = uiView.FindUIComponent("BulldozerButton");
-
-            button.relativePosition = new Vector2
-            (
-                refButton.relativePosition.x + refButton.width / 2.0f - button.width * position - refButton.width - 8.0f,
-                refButton.relativePosition.y + refButton.height / 2.0f - button.height / 2.0f
-            );
-        }
-
-        void CreateButtons()
-        {
-            UIView uiView = UIView.GetAView();
-
-            UIComponent refButton = uiView.FindUIComponent("BulldozerButton");
-
-            UIComponent tsBar = uiView.FindUIComponent("TSBar");
-            
-            if(btLevel == null)
-            {
-                btLevel = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
-                
-                InitButton(btLevel, "TerrainLevel", 4);
-
-                btShift = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
-                InitButton(btShift, "TerrainShift", 3);
-
-                btSoften = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
-                InitButton(btSoften, "TerrainSoften", 2);
-
-                btSlope = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
-                InitButton(btSlope, "TerrainSlope", 1);
-
-            }
 
         }
 
-        void toggleTerraform(UIComponent component, UIMouseEventParameter eventParam)
-        {
-            if (component == btLevel)
-            {                
-                buildTool.enabled = true;
-                buildTool.m_mode = InGameTerrainTool.Mode.Level;
-                buildTool.ApplySettings();
-            }
-            if (component == btShift)
-            {
-                buildTool.enabled = true;
-                buildTool.m_mode = InGameTerrainTool.Mode.Shift;
-                buildTool.ApplySettings();
-            }
-            if (component == btSoften)
-            {
-                buildTool.enabled = true;
-                buildTool.m_mode = InGameTerrainTool.Mode.Soften;
-                buildTool.ApplySettings();
-            } 
-            if (component == btSlope)
-            {
-                buildTool.enabled = true;
-                buildTool.m_mode = InGameTerrainTool.Mode.Slope;
-                buildTool.ApplySettings();
-            }
-            
-        }
+
     }
 
 }

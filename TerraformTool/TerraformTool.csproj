@@ -41,6 +41,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -51,7 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigData.cs" />
-    <Compile Include="Log.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Mod.cs" />
     <Compile Include="InGameTerrainTool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -74,6 +75,45 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="icon\TerrainLevel.png" />
+    <EmbeddedResource Include="icon\TerrainLevelDisabled.png" />
+    <EmbeddedResource Include="icon\TerrainLevelFocused.png" />
+    <EmbeddedResource Include="icon\TerrainLevelHovered.png" />
+    <EmbeddedResource Include="icon\TerrainLevelPressed.png" />
+    <EmbeddedResource Include="icon\TerrainShift.png" />
+    <EmbeddedResource Include="icon\TerrainShiftDisabled.png" />
+    <EmbeddedResource Include="icon\TerrainShiftFocused.png" />
+    <EmbeddedResource Include="icon\TerrainShiftHovered.png" />
+    <EmbeddedResource Include="icon\TerrainShiftPressed.png" />
+    <EmbeddedResource Include="icon\TerrainSlope.png" />
+    <EmbeddedResource Include="icon\TerrainSlopeDisabled.png" />
+    <EmbeddedResource Include="icon\TerrainSlopeFocused.png" />
+    <EmbeddedResource Include="icon\TerrainSlopeHovered.png" />
+    <EmbeddedResource Include="icon\TerrainSlopePressed.png" />
+    <EmbeddedResource Include="icon\TerrainSoften.png" />
+    <EmbeddedResource Include="icon\TerrainSoftenDisabled.png" />
+    <EmbeddedResource Include="icon\TerrainSoftenFocused.png" />
+    <EmbeddedResource Include="icon\TerrainSoftenHovered.png" />
+    <EmbeddedResource Include="icon\TerrainSoftenPressed.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozer.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerDisabled.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerFocused.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerHovered.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerPipes.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerPipesDisabled.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerPipesFocused.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerPipesHovered.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerPipesPressed.png" />
+    <EmbeddedResource Include="icon\ToolbarIconBulldozerPressed.png" />
+    <EmbeddedResource Include="icon\ToolbarIconGroup6Focused.png" />
+    <EmbeddedResource Include="icon\ToolbarIconGroup6Hovered.png" />
+    <EmbeddedResource Include="icon\ToolbarIconGroup6Pressed.png" />
+    <EmbeddedResource Include="icon\ToolbarIconTerrain.png" />
+    <EmbeddedResource Include="icon\ToolbarIconTerrainDisabled.png" />
+    <EmbeddedResource Include="icon\ToolbarIconTerrainFocused.png" />
+    <EmbeddedResource Include="icon\ToolbarIconTerrainHovered.png" />
+    <EmbeddedResource Include="icon\ToolbarIconTerrainPressed.png" />
+    <EmbeddedResource Include="spritesheet_2.png" />
     <Content Include="TerraformTool.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

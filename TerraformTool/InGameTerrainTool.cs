@@ -4,6 +4,7 @@ using System.IO;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using ColossalFramework.UI;
 
 namespace TerraformTool
 {
@@ -38,6 +39,7 @@ namespace TerraformTool
         }
         private Dictionary<InGameTerrainTool.Mode, ToolSettings> ModeSettings;
 
+        public UITextureAtlas m_atlas;
         public InGameTerrainTool.Mode m_mode;
         public bool m_free = false;
         public float m_brushSize = 1f;
@@ -47,7 +49,7 @@ namespace TerraformTool
         public CursorInfo m_levelCursor;
         public CursorInfo m_softenCursor;
         public CursorInfo m_slopeCursor;
-        private Vector3 m_mousePosition;
+        private Vector3 m_mousePosition;    
         internal Vector3 m_startPosition;
         private Vector3 m_endPosition;
         private Ray m_mouseRay;
@@ -66,6 +68,13 @@ namespace TerraformTool
         private bool m_undoRequest;
         private long m_lastCash;
 
+        UIScrollablePanel terraformPanel;
+        private UIButton btToggle;
+        private UIButton btLevel;
+        private UIButton btShift;
+        private UIButton btSlope;
+        private UIButton btSoften;
+
         private SavedInputKey m_UndoKey = new SavedInputKey(Settings.mapEditorTerrainUndo, Settings.inputSettingsFile, DefaultSettings.mapEditorTerrainUndo, true);
         private SavedInputKey m_IncreaseBrushSizeKey = new SavedInputKey(Settings.mapEditorIncreaseBrushSize, Settings.inputSettingsFile, DefaultSettings.mapEditorIncreaseBrushSize, true);
         private SavedInputKey m_DecreaseBrushSizeKey = new SavedInputKey(Settings.mapEditorDecreaseBrushSize, Settings.inputSettingsFile, DefaultSettings.mapEditorDecreaseBrushSize, true);
@@ -74,24 +83,150 @@ namespace TerraformTool
 
         private long m_totalCost;
         private int m_costMultiplier = 500;
-        public static ConfigData Myconfig;
+        public static ConfigData Config;
 
         public InGameTerrainTool()
         {
-            if (InGameTerrainTool.Myconfig == null & File.Exists(ConfigData.GetConfigPath()))
+            Debug.Log(ConfigData.GetConfigPath());
+            if (File.Exists(ConfigData.GetConfigPath()))
             {
-                InGameTerrainTool.Myconfig = ConfigData.Deserialize();
+                Config = ConfigData.Deserialize();
             }
             else
             {
-                //InGameTerrainTool.Myconfig = new ConfigData();
-                //ConfigData.Serialize(InGameTerrainTool.Myconfig);
+                Config = new ConfigData();
+                ConfigData.Serialize(Config);
             }
-            if (InGameTerrainTool.Myconfig != null)
+            if (InGameTerrainTool.Config != null)
             {
-                this.m_costMultiplier = InGameTerrainTool.Myconfig.MoneyModifer;
-                this.m_free = InGameTerrainTool.Myconfig.Free;
+                this.m_costMultiplier = InGameTerrainTool.Config.MoneyModifer;
+                this.m_free = InGameTerrainTool.Config.Free;
             }
+        }
+
+        void InitButton(UIButton button, string texture)
+        {
+            
+            button.normalBgSprite = texture;
+            button.disabledBgSprite = texture + "Disabled";
+            button.hoveredBgSprite = texture + "Hovered";
+            button.focusedBgSprite = texture + "Focused";
+            button.pressedBgSprite = texture + "Pressed";
+            // Place the button.            
+            
+            button.atlas = m_atlas;
+            button.eventClick += toggleTerraform;
+        }
+
+
+        public void CreateButtons()
+        {
+            UIView uiView = UIView.GetAView();
+
+            UIComponent refButton = uiView.FindUIComponent("Policies");
+             
+
+            UIComponent tsBar = uiView.FindUIComponent("TSBar");
+
+            if (btLevel == null)
+            {
+
+                terraformPanel = UIView.GetAView().FindUIComponent<UITabContainer>("TSContainer").AddUIComponent<UIScrollablePanel>();
+                terraformPanel.backgroundSprite = "SubcategoriesPanel";
+                terraformPanel.isVisible = false;
+                terraformPanel.name = "TerraformPanel";
+                terraformPanel.autoLayoutPadding = new RectOffset(25, 0, 20, 20);
+                terraformPanel.autoLayout = true;
+                
+
+
+                //btToggle = (UIButton)tsBar.AddUIComponent(typeof(UIButton));
+                btToggle = UIView.GetAView().FindUIComponent<UITabstrip>("MainToolstrip").AddUIComponent<UIButton>();
+                
+                InitButton(btToggle, "ToolbarIconTerrain");
+                btToggle.focusedFgSprite = "ToolbarIconGroup6Focused";
+                btToggle.hoveredFgSprite = "ToolbarIconGroup6Hovered";
+                btToggle.size = new Vector2(43, 49);
+                btToggle.name = "TerrainButton";
+
+                //btToggle.absolutePosition = new Vector2
+                //(
+                //    refButton.absolutePosition.x + refButton.width,
+                //    refButton.absolutePosition.y + refButton.height / 2 - btToggle.height / 2
+                //);
+
+                var leftOffset = 40;
+                var topOffset = 50;
+
+                btLevel = (UIButton)terraformPanel.AddUIComponent(typeof(UIButton));
+                InitButton(btLevel, "TerrainLevel");
+                btLevel.relativePosition = new Vector2(leftOffset, topOffset);
+                btLevel.size = new Vector2(109, 75);
+
+                btShift = (UIButton)terraformPanel.AddUIComponent(typeof(UIButton));
+                InitButton(btShift, "TerrainShift");
+                btShift.size = new Vector2(109, 75);
+                btShift.relativePosition = new Vector2
+                (
+                    leftOffset + btShift.width + btShift.width / 4,
+                    topOffset
+                );
+
+                btSoften = (UIButton)terraformPanel.AddUIComponent(typeof(UIButton));
+                InitButton(btSoften, "TerrainSoften");
+                btSoften.size = new Vector2(109, 75);
+                btSoften.relativePosition = new Vector2
+                (
+                    leftOffset + (btShift.width + btShift.width / 4) * 2,
+                    topOffset
+                );
+
+                btSlope = (UIButton)terraformPanel.AddUIComponent(typeof(UIButton));
+                InitButton(btSlope, "TerrainSlope");
+                btSlope.size = new Vector2(109, 75);
+                btSlope.relativePosition = new Vector2
+                (
+                    leftOffset + (btShift.width + btShift.width / 4) * 3,
+                    topOffset
+                );
+
+                terraformPanel.Reset();
+
+            }
+
+        }
+
+        void toggleTerraform(UIComponent component, UIMouseEventParameter eventParam)
+        {
+            if(component == btToggle)
+            {
+                enabled = true;
+            }
+            if (component == btLevel)
+            {
+                enabled = true;
+                m_mode = InGameTerrainTool.Mode.Level;
+                ApplySettings();
+            }
+            if (component == btShift)
+            {
+                enabled = true;
+                m_mode = InGameTerrainTool.Mode.Shift;
+                ApplySettings();
+            }
+            if (component == btSoften)
+            {
+                enabled = true;
+                m_mode = InGameTerrainTool.Mode.Soften;
+                ApplySettings();
+            }
+            if (component == btSlope)
+            {
+                enabled = true;
+                m_mode = InGameTerrainTool.Mode.Slope;
+                ApplySettings();
+            }
+
         }
 
         public bool IsUndoAvailable()
@@ -134,7 +269,7 @@ namespace TerraformTool
             ModeSettings[Mode.Shift] = new ToolSettings(25, 0.01f);
             ModeSettings[Mode.Soften] = new ToolSettings(50, 0.5f);
             ModeSettings[Mode.Slope] = new ToolSettings(25, 0.5f);
-
+            
             this.m_undoList = new List<InGameTerrainTool.UndoStroke>();
             if (Singleton<LoadingManager>.exists)
             {
@@ -262,6 +397,7 @@ namespace TerraformTool
             this.m_mouseRayValid = false;
             Singleton<TerrainManager>.instance.TransparentWater = false;
             ResetUndoBuffer();
+            terraformPanel.isVisible = false;
         }
         protected override void OnDestroy()
         {
@@ -298,7 +434,7 @@ namespace TerraformTool
             }
             else
             {
-                m_free = false;
+                m_free = Config.Free;
             }
 
             Vector3 mousePosition = Input.mousePosition;
@@ -566,6 +702,7 @@ namespace TerraformTool
                 }
             }
             TerrainModify.UpdateArea(minX, minZ, maxX, maxZ, true, false, false);
+            
             if(applied)
             {
                 if (m_free != true)
