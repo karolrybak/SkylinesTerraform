@@ -5,6 +5,8 @@ using ICities;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Reflection;
+
 
 namespace TerraformTool
 {
@@ -29,8 +31,6 @@ namespace TerraformTool
         
         public void LoadResources()
         {
-            //int spriteWidth = 60;
-            //int spriteHeight = 41;
             string[] spriteNames = {
                                            "TerrainLevel", 
                                            "TerrainLevelDisabled", 
@@ -60,15 +60,23 @@ namespace TerraformTool
                                            "ToolbarIconGroup6Focused", 
                                            "ToolbarIconGroup6Hovered", 
                                            "ToolbarIconGroup6Pressed", 
+                                           "ResourceSand",
+                                           "ResourceSandDisabled", 
+                                           "ResourceSandFocused", 
+                                           "ResourceSandHovered", 
+                                           "ResourceSandPressed",
+                                           "TerrainDitch",
+                                           "TerrainDitchFocused",
+                                           "TerrainDitchPressed",
                                        };
 
-            //terraform_atlas = CreateTextureAtlas("spritesheet_2.png", "TerraformUI", UIView.GetAView().defaultAtlas.material, spriteWidth, spriteHeight, spriteNames);
-            terraform_atlas = CreateTextureAtlas2("TerraformUI", UIView.GetAView().defaultAtlas.material, spriteNames, "TerraformTool.icon.");
+            terraform_atlas = CreateTextureAtlas("TerraformUI", UIView.GetAView().defaultAtlas.material, spriteNames, "TerraformTool.icon.");
 
         }
-        UITextureAtlas CreateTextureAtlas2(string atlasName, Material baseMaterial, string[] spriteNames, string assemblyPath)
+        UITextureAtlas CreateTextureAtlas(string atlasName, Material baseMaterial, string[] spriteNames, string assemblyPath)
         {
-            Texture2D atlasTex = new Texture2D(1024, 1024, TextureFormat.ARGB32, false);
+            var size = 1024;
+            Texture2D atlasTex = new Texture2D(size, size, TextureFormat.ARGB32, false);
 
             Texture2D[] textures = new Texture2D[spriteNames.Length];
             Rect[] rects = new Rect[spriteNames.Length];
@@ -78,21 +86,18 @@ namespace TerraformTool
                 textures[i] = loadTextureFromAssembly(assemblyPath + spriteNames[i] + ".png", false);
             }
 
-            rects = atlasTex.PackTextures(textures, 2, 1024);
+            rects = atlasTex.PackTextures(textures, 2, size);
 
-           
 
             UITextureAtlas atlas = ScriptableObject.CreateInstance<UITextureAtlas>();
 
-            { // Setup atlas
-                Material material = (Material)Material.Instantiate(baseMaterial);
-                material.mainTexture = atlasTex;
-
-                atlas.material = material;
-                atlas.name = atlasName;
-            }
-
-
+            // Setup atlas
+            Material material = Material.Instantiate(baseMaterial);
+            material.mainTexture = atlasTex;
+            atlas.material = material;
+            atlas.name = atlasName;
+            
+            // Add SpriteInfo
             for (int i = 0; i < spriteNames.Length; i++)
             {
                 var spriteInfo = new UITextureAtlas.SpriteInfo()
@@ -101,10 +106,8 @@ namespace TerraformTool
                     texture = atlasTex,
                     region = rects[i]
                 };
-
                 atlas.AddSprite(spriteInfo);
             }
-
             return atlas;
         }
         Texture2D loadTextureFromAssembly(string path, bool readOnly = true)
@@ -121,7 +124,6 @@ namespace TerraformTool
         }
         UITextureAtlas CreateTextureAtlas(string textureFile, string atlasName, Material baseMaterial, int spriteWidth, int spriteHeight, string[] spriteNames)
         {
-
             Texture2D tex = new Texture2D(spriteWidth * spriteNames.Length, spriteHeight, TextureFormat.ARGB32, false);
             tex.filterMode = FilterMode.Bilinear;
 
@@ -161,10 +163,9 @@ namespace TerraformTool
 
                 atlas.AddSprite(spriteInfo);
             }
-
             return atlas;
         }
-
+        
         public override void OnLevelLoaded(LoadMode mode)
         {
             if (!(mode == LoadMode.LoadGame || mode == LoadMode.NewGame))
@@ -178,33 +179,82 @@ namespace TerraformTool
                 {
                     GameObject gameController = GameObject.FindWithTag("GameController");
                     buildTool = gameController.AddComponent<InGameTerrainTool>();
-
-
                     Texture2D tex = loadTextureFromAssembly("TerraformTool.builtin_brush_4.png", false);
-
-
                     buildTool.m_atlas = terraform_atlas;
                     buildTool.CreateButtons();
                     buildTool.m_brush = tex;
-                    buildTool.m_mode = InGameTerrainTool.Mode.Level;
-                    buildTool.m_brushSize = 25;
-                    buildTool.m_strength = 0.5f;
+                    buildTool.m_mode = InGameTerrainTool.Mode.Point;
                     buildTool.enabled = false;
+
+                    //for(uint i = 0; i < PrefabCollection<BuildingInfo>.PrefabCount(); i++)
+                    //{
+                    //    var pf = PrefabCollection<BuildingInfo>.GetPrefab(i);
+                    //    if(pf.name == "Water Outlet")
+                    //    {
+                    //        var oldAI = pf.gameObject.GetComponent<BuildingAI>();
+                    //        //DestroyImmediate(oldAI);
+
+                    //        // add new ai
+
+                    //        var newAI = (BuildingAI)pf.gameObject.AddComponent(typeof(WaterOutletAI));
+
+                    //        TryCopyAttributes(oldAI, newAI);
+
+                    //        pf.TempInitializePrefab();
+                    //        pf.m_buildingAI = newAI;
+
+
+                    //        //pf.m_buildingAI = new WaterOutletAI();
+                    //        Debug.Log(pf.name);
+                    //    }
+                    //}
                 }
-
-
-
             }
             catch (Exception e)
             {
                 Debug.Log(e.ToString());
             }
-
-
-
         }
 
 
+        private void TryCopyAttributes(PrefabAI oldAI, PrefabAI newAI)
+        {
+            var oldAIFields =
+                oldAI.GetType()
+                    .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                               BindingFlags.FlattenHierarchy);
+            var newAIFields = newAI.GetType()
+                .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
+                           BindingFlags.FlattenHierarchy);
+
+            var newAIFieldDic = new Dictionary<String, FieldInfo>(newAIFields.Length);
+            foreach (var field in newAIFields)
+            {
+                newAIFieldDic.Add(field.Name, field);
+            }
+
+            foreach (var fieldInfo in oldAIFields)
+            {
+                if (fieldInfo.IsDefined(typeof(CustomizablePropertyAttribute), true))
+                {
+                    FieldInfo newAIField;
+                    newAIFieldDic.TryGetValue(fieldInfo.Name, out newAIField);
+
+                    try
+                    {
+                        if (newAIField.GetType().Equals(fieldInfo.GetType()))
+                        {
+                            newAIField.SetValue(newAI, fieldInfo.GetValue(oldAI));
+                        }
+                    }
+                    catch (NullReferenceException)
+                    {
+                    }
+                }
+            }
+        }
+
     }
+
 
 }

@@ -61,6 +61,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="WaterOutletAI.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="builtin_brush_4.png" />
@@ -114,6 +115,14 @@
     <EmbeddedResource Include="icon\ToolbarIconTerrainHovered.png" />
     <EmbeddedResource Include="icon\ToolbarIconTerrainPressed.png" />
     <EmbeddedResource Include="spritesheet_2.png" />
+    <EmbeddedResource Include="icon\ResourceSand.png" />
+    <EmbeddedResource Include="icon\ResourceSandDisabled.png" />
+    <EmbeddedResource Include="icon\ResourceSandFocused.png" />
+    <EmbeddedResource Include="icon\ResourceSandHovered.png" />
+    <EmbeddedResource Include="icon\ResourceSandPressed.png" />
+    <EmbeddedResource Include="icon\TerrainDitch.png" />
+    <EmbeddedResource Include="icon\TerrainDitchFocused.png" />
+    <EmbeddedResource Include="icon\TerrainDitchPressed.png" />
     <Content Include="TerraformTool.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
