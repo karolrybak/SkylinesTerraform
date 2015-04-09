@@ -67,9 +67,6 @@
     <EmbeddedResource Include="builtin_brush_4.png" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="spritesheet.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -114,7 +111,6 @@
     <EmbeddedResource Include="icon\ToolbarIconTerrainFocused.png" />
     <EmbeddedResource Include="icon\ToolbarIconTerrainHovered.png" />
     <EmbeddedResource Include="icon\ToolbarIconTerrainPressed.png" />
-    <EmbeddedResource Include="spritesheet_2.png" />
     <EmbeddedResource Include="icon\ResourceSand.png" />
     <EmbeddedResource Include="icon\ResourceSandDisabled.png" />
     <EmbeddedResource Include="icon\ResourceSandFocused.png" />

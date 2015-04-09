@@ -722,7 +722,8 @@ namespace TerraformTool
             }
         }
 
-        ushort targetHeight2;
+        ushort targetHeightStroke;
+
         private void ApplyPoint(bool negate, bool inProgress)
         {
             ushort[] rawHeights = TerrainManager.instance.RawHeights;
@@ -752,7 +753,6 @@ namespace TerraformTool
                 }
             }
 
-            
             ushort targetHeight = (ushort)(minHeight);
             if (negate)
                 targetHeight = (ushort)(maxHeight);
@@ -760,14 +760,11 @@ namespace TerraformTool
 
             var diff = trenchDepth * (negate ? 1 : -1);
 
-            
             if (!inProgress)
             {
-                targetHeight2 = (ushort)(targetHeight - diff);
+                targetHeightStroke = (ushort)(targetHeight - diff);
             }
                             
-
-
             int m_applyCost = 0;
             bool outOfMoney = false;
 
@@ -778,11 +775,11 @@ namespace TerraformTool
 
 
                     if (!outOfMoney)
-                        m_applyCost += Mathf.Abs(targetHeight2 - TerrainManager.instance.RawHeights[i * (TerrainManager.RAW_RESOLUTION + 1) + j]) * m_costMultiplier;
+                        m_applyCost += Mathf.Abs(targetHeightStroke - TerrainManager.instance.RawHeights[i * (TerrainManager.RAW_RESOLUTION + 1) + j]) * m_costMultiplier;
 
                     if ((m_applyCost + m_totalCost < m_lastCash && m_applyCost + m_totalCost < Int32.MaxValue) || m_free == true)
                     {
-                        TerrainManager.instance.RawHeights[i * (TerrainManager.RAW_RESOLUTION + 1) + j] = targetHeight2;
+                        TerrainManager.instance.RawHeights[i * (TerrainManager.RAW_RESOLUTION + 1) + j] = targetHeightStroke;
                         this.m_strokeXmin = Math.Min(this.m_strokeXmin, j);
                         this.m_strokeXmax = Math.Max(this.m_strokeXmax, j);
                         this.m_strokeZmin = Math.Min(this.m_strokeZmin, i);

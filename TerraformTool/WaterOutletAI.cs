@@ -17,7 +17,8 @@ public class WaterOutletAI : PlayerBuildingAI
     public int m_waterIntake = 1000;
     [CustomizableProperty("SewageOutlet", "Water")]
     public int m_sewageOutlet = 0;
-    public Vector3 m_waterLocationOffset = new Vector3(0, 0, 32);
+
+    public Vector3 m_waterLocationOffset = new Vector3(0, 0, 8);
     [CustomizableProperty("MaxWaterDistance", "Water")]
     public float m_maxWaterDistance = 100f;
     [CustomizableProperty("UseGroundWater", "Water")]
@@ -210,7 +211,7 @@ public class WaterOutletAI : PlayerBuildingAI
                 {
                     num4 = num3;
                     Vector3 pos = buildingData.CalculatePosition(this.m_waterLocationOffset);
-                    Singleton<NaturalResourceManager>.instance.CheckPollution(pos, out buildingData.m_waterPollution);
+                    NaturalResourceManager.instance.CheckPollution(pos, out buildingData.m_waterPollution);
                 }
                 else
                 {
