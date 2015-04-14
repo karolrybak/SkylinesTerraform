@@ -130,7 +130,7 @@ namespace TerraformTool
 
             button.normalBgSprite = texture;
             button.disabledBgSprite = texture + "Disabled";
-            button.hoveredBgSprite = texture + "Focused";
+            button.hoveredBgSprite = texture + "Hovered";
             button.focusedBgSprite = texture + "Focused";
             button.pressedBgSprite = texture + "Pressed";
             // Place the button.            
@@ -581,7 +581,7 @@ namespace TerraformTool
 
         private int GetFreeUndoSpace()
         {
-            int num = Singleton<TerrainManager>.instance.UndoBuffer.Length;
+            int num = this.m_undoBuffer.Length;
             if (this.m_undoList.Count > 0)
             {
                 return (num + this.m_undoList[0].pointer - this.m_undoBufferFreePointer) % num - 1;
@@ -591,7 +591,6 @@ namespace TerraformTool
 
         private void EndStroke()
         {
-            int num = Singleton<TerrainManager>.instance.UndoBuffer.Length;
             int num2 = Math.Max(0, 1 + this.m_strokeXmax - this.m_strokeXmin) * Math.Max(0, 1 + this.m_strokeZmax - this.m_strokeZmin);
             if (num2 < 1)
             {
@@ -623,7 +622,7 @@ namespace TerraformTool
                     int num4 = i * 1081 + j;
                     this.m_undoBuffer[this.m_undoBufferFreePointer++] = this.m_backupHeights[num4];
                     this.m_backupHeights[num4] = this.m_rawHeights[num4];
-                    this.m_undoBufferFreePointer %= num;
+                    this.m_undoBufferFreePointer %= this.m_undoBuffer.Length;
                 }
             }
             this.m_strokeXmin = 1080;
