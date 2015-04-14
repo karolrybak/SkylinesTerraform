@@ -179,10 +179,12 @@ namespace TerraformTool
                 {
                     GameObject gameController = GameObject.FindWithTag("GameController");
                     buildTool = gameController.AddComponent<InGameTerrainTool>();
-                    Texture2D tex = loadTextureFromAssembly("TerraformTool.builtin_brush_4.png", false);
+                    Texture2D tex1 = loadTextureFromAssembly("TerraformTool.builtin_brush_4.png", false);
+                    Texture2D tex2 = loadTextureFromAssembly("TerraformTool.square_brush.png", false);
                     buildTool.m_atlas = terraform_atlas;
                     buildTool.CreateButtons();
-                    buildTool.m_brush = tex;
+                    buildTool.m_brush_circular = tex1;
+                    buildTool.m_brush_square = tex2;
                     buildTool.m_mode = InGameTerrainTool.Mode.Point;
                     buildTool.enabled = false;
 

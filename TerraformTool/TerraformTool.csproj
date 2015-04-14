@@ -108,6 +108,7 @@
     <EmbeddedResource Include="icon\TerrainDitch.png" />
     <EmbeddedResource Include="icon\TerrainDitchFocused.png" />
     <EmbeddedResource Include="icon\TerrainDitchPressed.png" />
+    <EmbeddedResource Include="square_brush.png" />
     <Content Include="TerraformTool.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

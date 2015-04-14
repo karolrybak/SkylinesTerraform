@@ -52,7 +52,8 @@ namespace TerraformTool
         public bool m_free = false;
         public float m_brushSize = 1f;
         public float m_strength = 0.5f;
-        public Texture2D m_brush;
+        public Texture2D m_brush_circular;
+        public Texture2D m_brush_square;
         public CursorInfo m_shiftCursor;
         public CursorInfo m_levelCursor;
         public CursorInfo m_softenCursor;
@@ -464,7 +465,14 @@ namespace TerraformTool
         protected override void OnEnable()
         {
             base.OnEnable();
-            this.m_toolController.SetBrush(this.m_brush, this.m_mousePosition, this.m_brushSize);
+            if (this.m_mode == InGameTerrainTool.Mode.Point)
+            {
+                this.m_toolController.SetBrush(this.m_brush_square, this.m_mousePosition, this.m_brushSize);
+            }
+            else
+            {
+                this.m_toolController.SetBrush(this.m_brush_circular, this.m_mousePosition, this.m_brushSize);
+            }
             this.m_strokeXmin = 1080;
             this.m_strokeXmax = 0;
             this.m_strokeZmin = 1080;
@@ -541,7 +549,14 @@ namespace TerraformTool
             this.m_mouseRay = Camera.main.ScreenPointToRay(mousePosition);
             this.m_mouseRayLength = Camera.main.farClipPlane;
             this.m_mouseRayValid = (!this.m_toolController.IsInsideUI && Cursor.visible);
-            this.m_toolController.SetBrush(this.m_brush, this.m_mousePosition, this.m_brushSize);
+            if (this.m_mode == InGameTerrainTool.Mode.Point)
+            {
+                this.m_toolController.SetBrush(this.m_brush_square, this.m_mousePosition, this.m_brushSize);
+            }
+            else
+            {
+                this.m_toolController.SetBrush(this.m_brush_circular, this.m_mousePosition, this.m_brushSize);
+            }
         }
 
         public override void SimulationStep()
