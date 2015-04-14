@@ -59,6 +59,7 @@ namespace TerraformTool
         public CursorInfo m_slopeCursor;
         private Vector3 m_mousePosition;
         internal Vector3 m_startPosition;
+        private Vector3 m_strokeStartPosition;
         private Vector3 m_endPosition;
         private Ray m_mouseRay;
         private float m_mouseRayLength;
@@ -248,61 +249,97 @@ namespace TerraformTool
             this.m_undoRequest = true;
         }
 
+        //pasted my version of RenderOverlay  @SimsFirehouse
         public override void RenderOverlay(RenderManager.CameraInfo cameraInfo)
         {
-            while (!Monitor.TryEnter(this.m_dataLock, SimulationManager.SYNCHRONIZE_TIMEOUT))
+            Monitor.Exit(this.m_dataLock);
+
+            float brushRadius = this.m_brushSize * 0.5f;
+
+            Color color1 = new Color(1.0f, Mathf.Sqrt(this.m_strength) * 2.5f - 0.77f, 0f);
+            Color color2 = Color.yellow;
+            Color color3 = new Color(0.3f, 0.3f, 0.3f);
+
+            if (this.m_mouseRayValid && this.enabled)
             {
+                Vector3 mouse = this.m_mousePosition;
+                mouse.y = 0f;
+
+                float a = TerrainManager.RAW_CELL_SIZE;
+
+                int minX = Mathf.CeilToInt((mouse.x - brushRadius) / a);
+                int minZ = Mathf.CeilToInt((mouse.z - brushRadius) / a);
+                int maxX = Mathf.FloorToInt((mouse.x + brushRadius) / a);
+                int maxZ = Mathf.FloorToInt((mouse.z + brushRadius) / a);
+
+                Singleton<ToolManager>.instance.m_drawCallData.m_overlayCalls++;
+                OverlayEffect OverlayEffect = Singleton<RenderManager>.instance.OverlayEffect;
+
+                for (int i = minX - 1; i <= maxX + 1; i++)
+                {
+                    for (int j = minZ - 1; j <= maxZ + 1; j++)
+                    {
+                        if (this.m_mode == InGameTerrainTool.Mode.Point)
+                        {
+                            if ((i >= minX && i <= maxX) || (j >= minZ && j <= maxZ))
+                            {
+                                if (i < minX || i > maxX || j < minZ || j > maxZ)
+                                {
+                                    OverlayEffect.DrawCircle(cameraInfo, color3, new Vector3(i * a, 0f, j * a), 3f, -1f, 1025f, false, true);
+                                }
+                                else
+                                {
+                                    OverlayEffect.DrawCircle(cameraInfo, color1, new Vector3(i * a, 0f, j * a), 4.5f, -1f, 1025f, false, true);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            float dx = i - mouse.x / a;
+                            float dz = j - mouse.z / a;
+                            if (dx * dx + dz * dz < (brushRadius / a + 1) * (brushRadius / a + 1))
+                            {
+                                if (dx * dx + dz * dz > brushRadius / a * brushRadius / a)
+                                {
+                                    OverlayEffect.DrawCircle(cameraInfo, color3, new Vector3(i * a, 0f, j * a), 3f, -1f, 1025f, false, true);
+                                }
+                                else
+                                {
+                                    OverlayEffect.DrawCircle(cameraInfo, color1, new Vector3(i * a, 0f, j * a), 4.5f, -1f, 1025f, false, true);
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                if (!this.m_strokeInProgress)
+                {
+                    this.m_strokeStartPosition = new Vector3
+                    {
+                        x = Mathf.RoundToInt(mouse.x / a) * a,
+                        z = Mathf.RoundToInt(mouse.z / a) * a,
+                    };
+                }
+                if (this.m_mode == InGameTerrainTool.Mode.Point)
+                {
+                    OverlayEffect.DrawCircle(cameraInfo, color2, this.m_strokeStartPosition, 9f, -1f, 1025f, false, true);
+
+                }
+                else
+                {
+                    if (this.m_mode == InGameTerrainTool.Mode.Level || this.m_mode == InGameTerrainTool.Mode.Slope)
+                    {
+                        Vector3 samplePosition = new Vector3
+                        {
+                            x = Mathf.RoundToInt(this.m_startPosition.x / a) * a,
+                            z = Mathf.RoundToInt(this.m_startPosition.z / a) * a,
+                        };
+                        OverlayEffect.DrawCircle(cameraInfo, color2, samplePosition, 9f, -1f, 1025f, false, true);
+                        OverlayEffect.DrawCircle(cameraInfo, color2, this.m_strokeStartPosition, 9f, -1f, 1025f, false, true);
+                    }
+                }
             }
-            Vector3 startPosition;
-            Vector3 mousePosition;
-            try
-            {
-                startPosition = this.m_startPosition;
-                mousePosition = this.m_mousePosition;
-            }
-            finally
-            {
-                Monitor.Exit(this.m_dataLock);
-            }
-
-            var color = Color.red;
-
-            if (m_mode != Mode.Point)
-            {
-                base.RenderOverlay(cameraInfo);
-                return;
-            }
-
-            Vector3 a = mousePosition;
-            Vector3 vector = mousePosition;
-
-            //a.x = (int)((mousePosition.x) / TerrainManager.RAW_CELL_SIZE) * TerrainManager.RAW_CELL_SIZE;
-            //a.z = (int)((mousePosition.z) / TerrainManager.RAW_CELL_SIZE) * TerrainManager.RAW_CELL_SIZE;
-
-            Vector3 a2 = Vector3.forward;
-            Vector3 a3 = new Vector3(a2.z, 0f, -a2.x);
-
-            float num = Mathf.Round(((vector.x - a.x) * a2.x + (vector.z - a.z) * a2.z) * 0.125f) * 8f;
-            float num2 = Mathf.Round(((vector.x - a.x) * a3.x + (vector.z - a.z) * a3.z) * 0.125f) * 8f;
-
-            float num3 = (num < 0f) ? -4f : 4f;
-            float num4 = (num2 < 0f) ? -4f : 4f;
-
-            Quad3 quad = default(Quad3);
-            quad.a = a - a2 * num3 - a3 * num4;
-            quad.b = a - a2 * num3 + a3 * (num2 + num4);
-            quad.c = a + a2 * (num + num3) + a3 * (num2 + num4);
-            quad.d = a + a2 * (num + num3) - a3 * num4;
-
-            if (num3 != num4)
-            {
-                Vector3 b = quad.b;
-                quad.b = quad.d;
-                quad.d = b;
-            }
-            ToolManager toolManager = ToolManager.instance;
-            toolManager.m_drawCallData.m_overlayCalls++;
-            RenderManager.instance.OverlayEffect.DrawQuad(cameraInfo, color, quad, -1f, 1025f, false, true);
 
             base.RenderOverlay(cameraInfo);
         }
@@ -326,10 +363,10 @@ namespace TerraformTool
             //changed default brush settings here  @SimsFirehouse
             ModeSettings = new Dictionary<Mode, ToolSettings>();
             ModeSettings[Mode.Level] = new ToolSettings(24, 0.5f);
-            ModeSettings[Mode.Shift] = new ToolSettings(24, 0.01f);
-            ModeSettings[Mode.Soften] = new ToolSettings(48, 0.2f);
+            ModeSettings[Mode.Shift] = new ToolSettings(24, 0.1f);
+            ModeSettings[Mode.Soften] = new ToolSettings(48, 0.1f);
             ModeSettings[Mode.Slope] = new ToolSettings(24, 0.5f);
-            ModeSettings[Mode.ResourceSand] = new ToolSettings(50, 0.5f);
+            ModeSettings[Mode.ResourceSand] = new ToolSettings(48, 0.5f);
             ModeSettings[Mode.Point] = new ToolSettings(24, 0.5f);
 
             this.m_undoList = new List<InGameTerrainTool.UndoStroke>();
@@ -406,7 +443,7 @@ namespace TerraformTool
                 //changed brush setting here  @SimsFirehouse
                 if (this.m_IncreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
                 {
-                    m_brushSize = Mathf.Min(1280, m_brushSize + 8);
+                    m_brushSize = Mathf.Min(320, m_brushSize + 8);
                     UpdateSettings();
                 }
                 if (this.m_DecreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
@@ -416,12 +453,12 @@ namespace TerraformTool
                 }
                 if (this.m_IncreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
                 {
-                    m_strength = Mathf.Min(1, m_strength + 0.05f);
+                    m_strength = Mathf.Min(0.5f, m_strength + 0.1f);
                     UpdateSettings();
                 }
                 if (this.m_DecreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
                 {
-                    m_strength = Mathf.Max(0.01f, m_strength - 0.05f);
+                    m_strength = Mathf.Max(0.1f, m_strength - 0.1f);
                     UpdateSettings();
                 }
             }
@@ -709,8 +746,6 @@ namespace TerraformTool
         //deleted parameter input in ApplyPoint()  @SimsFirehouse
         //merged ApplyPoint() into ApplyBrush()  @SimsFirehouse
 
-        private ushort endHeight;
-
         private void ApplyBrush()
         {
             long m_applyCost = 0;
@@ -726,6 +761,7 @@ namespace TerraformTool
             int b = TerrainManager.RAW_RESOLUTION;
             int c = 64;
             int originalHeight = 60;
+            ushort endHeight = 0;
 
             Vector3 mouse = this.m_mousePosition;
             mouse.y = 0f;
