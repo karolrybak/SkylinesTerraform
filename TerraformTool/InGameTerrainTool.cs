@@ -103,6 +103,7 @@ namespace TerraformTool
         private ushort[] m_rawHeights = Singleton<TerrainManager>.instance.RawHeights;
         private ushort[] m_backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
         private ushort[] m_finalHeights = Singleton<TerrainManager>.instance.FinalHeights;
+        private ushort[] m_undoBuffer = Singleton<TerrainManager>.instance.UndoBuffer;
 
         public InGameTerrainTool()
         {
@@ -310,14 +311,12 @@ namespace TerraformTool
         {
             this.m_undoList.Clear();
 
-            ushort[] backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
-            ushort[] rawHeights = Singleton<TerrainManager>.instance.RawHeights;
             for (int i = 0; i <= 1080; i++)
             {
                 for (int j = 0; j <= 1080; j++)
                 {
                     int num = i * 1081 + j;
-                    backupHeights[num] = rawHeights[num];
+                    this.m_backupHeights[num] = this.m_rawHeights[num];
                 }
             }
         }
@@ -436,14 +435,12 @@ namespace TerraformTool
             this.m_strokeXmax = 0;
             this.m_strokeZmin = 1080;
             this.m_strokeZmax = 0;
-            ushort[] backupHeights = TerrainManager.instance.BackupHeights;
-            ushort[] rawHeights = TerrainManager.instance.RawHeights;
             for (int i = 0; i <= 1080; i++)
             {
                 for (int j = 0; j <= 1080; j++)
                 {
                     int num = i * 1081 + j;
-                    backupHeights[num] = rawHeights[num];
+                    this.m_backupHeights[num] = this.m_rawHeights[num];
                 }
             }
             TerrainManager.instance.TransparentWater = true;
@@ -585,16 +582,13 @@ namespace TerraformTool
             item.total_cost = (int)m_totalCost;
             item.pointer = this.m_undoBufferFreePointer;
             this.m_undoList.Add(item);
-            ushort[] undoBuffer = Singleton<TerrainManager>.instance.UndoBuffer;
-            ushort[] backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
-            ushort[] rawHeights = Singleton<TerrainManager>.instance.RawHeights;
             for (int i = this.m_strokeZmin; i <= this.m_strokeZmax; i++)
             {
                 for (int j = this.m_strokeXmin; j <= this.m_strokeXmax; j++)
                 {
                     int num4 = i * 1081 + j;
-                    undoBuffer[this.m_undoBufferFreePointer++] = backupHeights[num4];
-                    backupHeights[num4] = rawHeights[num4];
+                    this.m_undoBuffer[this.m_undoBufferFreePointer++] = this.m_backupHeights[num4];
+                    this.m_backupHeights[num4] = this.m_rawHeights[num4];
                     this.m_undoBufferFreePointer %= num;
                 }
             }
@@ -613,44 +607,33 @@ namespace TerraformTool
             }
             InGameTerrainTool.UndoStroke undoStroke = this.m_undoList[this.m_undoList.Count - 1];
             this.m_undoList.RemoveAt(this.m_undoList.Count - 1);
-            ushort[] undoBuffer = Singleton<TerrainManager>.instance.UndoBuffer;
-            ushort[] backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
-            ushort[] rawHeights = Singleton<TerrainManager>.instance.RawHeights;
-            int num = Singleton<TerrainManager>.instance.UndoBuffer.Length;
-            int num2 = Singleton<TerrainManager>.instance.RawHeights.Length;
+
+            int Xmin = undoStroke.xmin;
+            int Xmax = undoStroke.xmax;
+            int Zmin = undoStroke.zmin;
+            int Zmax = undoStroke.zmax;
+            int pointer = undoStroke.pointer;
+            int num = this.m_undoBuffer.Length;
             int num3 = undoStroke.pointer;
             for (int i = undoStroke.zmin; i <= undoStroke.zmax; i++)
             {
                 for (int j = undoStroke.xmin; j <= undoStroke.xmax; j++)
                 {
                     int num4 = i * 1081 + j;
-                    rawHeights[num4] = undoBuffer[num3];
-                    backupHeights[num4] = undoBuffer[num3];
+                    this.m_rawHeights[num4] = this.m_undoBuffer[num3];
+                    this.m_backupHeights[num4] = this.m_undoBuffer[num3];
                     num3++;
                     num3 %= num;
                 }
             }
             this.m_undoBufferFreePointer = undoStroke.pointer;
-            for (int k = 0; k < num2; k++)
-            {
-                backupHeights[k] = rawHeights[k];
-            }
-            int num5 = 128;
-            undoStroke.xmin = Math.Max(0, undoStroke.xmin - 2);
-            undoStroke.xmax = Math.Min(1080, undoStroke.xmax + 2);
-            undoStroke.zmin = Math.Max(0, undoStroke.zmin - 2);
-            undoStroke.zmax = Math.Min(1080, undoStroke.zmax + 2);
-            for (int l = undoStroke.zmin; l <= undoStroke.zmax; l += num5 + 1)
-            {
-                for (int m = undoStroke.xmin; m <= undoStroke.xmax; m += num5 + 1)
-                {
-                    TerrainModify.UpdateArea(m, l, m + num5, l + num5, true, false, false);
-                }
-            }
+
             this.m_strokeXmin = 1080;
             this.m_strokeXmax = 0;
             this.m_strokeZmin = 1080;
             this.m_strokeZmax = 0;
+
+            TerrainModify.UpdateArea(Xmin - 2, Zmin - 2, Xmax + 2, Zmax + 2, true, false, false);
             if (m_free != true)
             {
                 EconomyManager.instance.FetchResource(EconomyManager.Resource.Construction, -undoStroke.total_cost, ItemClass.Service.None, ItemClass.SubService.None, ItemClass.Level.None);
