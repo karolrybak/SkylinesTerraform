@@ -533,8 +533,8 @@ namespace TerraformTool
                     }
                     else if (m_mode == Mode.Point)
                     {
-
-                        ApplyPoint(!m_mouseLeftDown, this.m_strokeInProgress);
+                        //deleted parameter input  @SimsFirehouse
+                        ApplyPoint();
                         this.m_strokeInProgress = true;
                     }
                     else
@@ -724,7 +724,8 @@ namespace TerraformTool
 
         ushort targetHeightStroke;
 
-        private void ApplyPoint(bool negate, bool inProgress)
+        //deleted parameter input in ApplyPoint()  @SimsFirehouse
+        private void ApplyPoint()
         {
             ushort[] rawHeights = TerrainManager.instance.RawHeights;
             Vector3 mousePosition = this.m_mousePosition;
@@ -754,13 +755,13 @@ namespace TerraformTool
             }
 
             ushort targetHeight = (ushort)(minHeight);
-            if (negate)
+            if (this.m_mouseRightDown)
                 targetHeight = (ushort)(maxHeight);
 
 
-            var diff = trenchDepth * (negate ? 1 : -1);
+            var diff = trenchDepth * (this.m_mouseRightDown ? 1 : -1);
 
-            if (!inProgress)
+            if (!this.m_strokeInProgress)
             {
                 targetHeightStroke = (ushort)(targetHeight - diff);
             }
