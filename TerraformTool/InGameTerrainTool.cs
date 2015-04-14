@@ -806,121 +806,87 @@ namespace TerraformTool
             long m_applyCost = 0;
             bool outOfMoney = false;
             bool applied = false;
-            float[] brushData = this.m_toolController.BrushData;
+            //BrushData isn't necessary anymore  @SimsFirehouse
             float brushRadius = this.m_brushSize * 0.5f;
-            float num2 = TerrainManager.RAW_CELL_SIZE;
-            int num3 = TerrainManager.RAW_RESOLUTION;
-            ushort[] rawHeights = TerrainManager.instance.RawHeights;
-            ushort[] finalHeights = TerrainManager.instance.FinalHeights;
+            ushort[] rawHeights = Singleton<TerrainManager>.instance.RawHeights;
+            ushort[] finalHeights = Singleton<TerrainManager>.instance.FinalHeights;
 
             float strength = this.m_strength;
-            int smoothStrength = 3;
-
-            float num5 = 0.015625f;
-            float num6 = 64f;
-
-            Vector3 mousePosition = this.m_mousePosition;
-            Vector3 vector = this.m_endPosition - this.m_startPosition;
-            vector.y = 0f;
-            float num7 = vector.sqrMagnitude;
-            if (num7 != 0f)
-            {
-                num7 = 1f / num7;
-            }
-            float num8 = 20f;
+            int smoothStrength = this.m_mouseRightDown ? 10 : 3;
 
             //more readable format; changed type casting method for minX - maxZ:
             //from truncation to ceil() for min's and floor() for max's  @SimsFirehouse
             float a = TerrainManager.RAW_CELL_SIZE;
             int b = TerrainManager.RAW_RESOLUTION;
+            int c = 64;
+            int originalHeight;
+            ushort endHeight = 0;
 
             Vector3 mouse = this.m_mousePosition;
             mouse.y = 0f;
+            Vector3 vector = this.m_endPosition - this.m_startPosition;
+            vector.y = 0f;
+            Vector3 startPos = this.m_startPosition;
+            startPos.y = 0f;
 
             Vector3 coords = new Vector3(b / 2, 0f, b / 2);
 
             int minX = Mathf.Max(Mathf.CeilToInt((mouse.x - brushRadius) / a + coords.x), 2);
             int minZ = Mathf.Max(Mathf.CeilToInt((mouse.z - brushRadius) / a + coords.z), 2);
             int maxX = Mathf.Min(Mathf.FloorToInt((mouse.x + brushRadius) / a + coords.x), b - 2);
-            int maxZ = Mathf.Min(Mathf.FloorToInt((mouse.z + brushRadius) / a + coords.z), b - 2); 
-            
-            if (this.m_mode == InGameTerrainTool.Mode.Shift)
-            {
-                if (this.m_mouseRightDown)
-                {
-                    num8 = -num8;
-                }
-            }
-            else if (this.m_mode == InGameTerrainTool.Mode.Soften && this.m_mouseRightDown)
-            {
-                smoothStrength = 10;
-            }
+            int maxZ = Mathf.Min(Mathf.FloorToInt((mouse.z + brushRadius) / a + coords.z), b - 2);
+
+            //rewritten the whole block  @SimsFirehouse
             for (int i = minZ; i <= maxZ; i++)
             {
-                float num13 = (((float)i - (float)num3 * 0.5f) * num2 - mousePosition.z + brushRadius) / this.m_brushSize * 64f - 0.5f;
-                int num14 = Mathf.Clamp(Mathf.FloorToInt(num13), 0, 63);
-                int num15 = Mathf.Clamp(Mathf.CeilToInt(num13), 0, 63);
                 for (int j = minX; j <= maxX; j++)
                 {
-                    float num16 = (((float)j - (float)num3 * 0.5f) * num2 - mousePosition.x + brushRadius) / this.m_brushSize * 64f - 0.5f;
-                    int num17 = Mathf.Clamp(Mathf.FloorToInt(num16), 0, 63);
-                    int num18 = Mathf.Clamp(Mathf.CeilToInt(num16), 0, 63);
-                    float num19 = brushData[num14 * 64 + num17];
-                    float num20 = brushData[num14 * 64 + num18];
-                    float num21 = brushData[num15 * 64 + num17];
-                    float num22 = brushData[num15 * 64 + num18];
-                    float num23 = num19 + (num20 - num19) * (num16 - (float)num17);
-                    float num24 = num21 + (num22 - num21) * (num16 - (float)num17);
-                    float num25 = num23 + (num24 - num23) * (num13 - (float)num14);
-                    float num26 = (float)rawHeights[i * (num3 + 1) + j] * num5;
-                    float num27 = 0f;
+                    Vector3 position = new Vector3(j, 0f, i);
+                    float targetHeight = 0f;
+                    float t1 = Mathf.Clamp(1 - (position - mouse / a - coords).magnitude / (brushRadius / a), 0f, 1f);
+                    originalHeight = (int)rawHeights[i * (b + 1) + j];
                     if (this.m_mode == InGameTerrainTool.Mode.Shift)
                     {
-                        num27 = num26 + num8;
+                        targetHeight = Mathf.Clamp(originalHeight + this.trenchDepth * (this.m_mouseLeftDown ? 1 : -1), 0, 65535);
                     }
                     else if (this.m_mode == InGameTerrainTool.Mode.Level)
                     {
-                        num27 = this.m_startPosition.y;
+                        targetHeight = this.m_startPosition.y * c;
                     }
                     else if (this.m_mode == InGameTerrainTool.Mode.Soften)
                     {
-                        int num28 = Mathf.Max(j - smoothStrength, 0);
-                        int num29 = Mathf.Max(i - smoothStrength, 0);
-                        int num30 = Mathf.Min(j + smoothStrength, num3);
-                        int num31 = Mathf.Min(i + smoothStrength, num3);
-                        float num32 = 0f;
-                        for (int k = num29; k <= num31; k++)
+                        int minJ = Mathf.Max(j - smoothStrength, 0);
+                        int minI = Mathf.Max(i - smoothStrength, 0);
+                        int maxJ = Mathf.Min(j + smoothStrength, b);
+                        int maxI = Mathf.Min(i + smoothStrength, b);
+                        float area = 0f;
+                        for (int k = minI; k <= maxI; k++)
                         {
-                            for (int l = num28; l <= num30; l++)
+                            for (int l = minJ; l <= maxJ; l++)
                             {
-                                float num33 = 1f - (float)((l - j) * (l - j) + (k - i) * (k - i)) / (float)(smoothStrength * smoothStrength);
-                                if (num33 > 0f)
+                                float t3 = 1f - ((l - j) * (l - j) + (k - i) * (k - i)) / (smoothStrength * smoothStrength);
+                                if (t3 > 0f)
                                 {
-                                    num27 += (float)finalHeights[k * (num3 + 1) + l] * (num5 * num33);
-                                    num32 += num33;
+                                    targetHeight += (float)finalHeights[k * (b + 1) + l] / c * t3;
+                                    area += t3;
                                 }
                             }
                         }
-                        num27 /= num32;
+                        targetHeight /= area;
                     }
                     else if (this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
-                        float num34 = ((float)j - (float)num3 * 0.5f) * num2;
-                        float num35 = ((float)i - (float)num3 * 0.5f) * num2;
-                        float t = ((num34 - this.m_startPosition.x) * vector.x + (num35 - this.m_startPosition.z) * vector.z) * num7;
-                        num27 = Mathf.Lerp(this.m_startPosition.y, this.m_endPosition.y, t);
+                        float t2 = Mathf.Clamp(Vector3.Dot((position - coords) * a - startPos, vector) / vector.sqrMagnitude, 0f, 1f);
+                        targetHeight = Mathf.Lerp(this.m_startPosition.y * c, this.m_endPosition.y * c, t2);
                     }
-                    num27 = Mathf.Lerp(num26, num27, strength * num25);
-
-                    var oldHeight = rawHeights[i * (num3 + 1) + j];
-                    var newHeight = (ushort)Mathf.Clamp(Mathf.RoundToInt(num27 * num6), 0, 65535);
+                    endHeight = (ushort)Mathf.Lerp(originalHeight, targetHeight, this.m_strength * t1);
 
                     if (!outOfMoney)
-                        m_applyCost += Mathf.Abs(newHeight - oldHeight) * m_costMultiplier;
+                        m_applyCost += Mathf.Abs(endHeight - originalHeight) * m_costMultiplier;
 
                     if ((m_applyCost + m_totalCost < m_lastCash && m_applyCost + m_totalCost < Int32.MaxValue) || m_free == true)
                     {
-                        rawHeights[i * (num3 + 1) + j] = newHeight;
+                        rawHeights[i * (b + 1) + j] = endHeight;
                         this.m_strokeXmin = Math.Min(this.m_strokeXmin, j);
                         this.m_strokeXmax = Math.Max(this.m_strokeXmax, j);
                         this.m_strokeZmin = Math.Min(this.m_strokeZmin, i);
@@ -934,7 +900,7 @@ namespace TerraformTool
 
                 }
             }
-            TerrainModify.UpdateArea(minX, minZ, maxX, maxZ, true, true, false);
+            TerrainModify.UpdateArea(minX - 2, minZ - 2, maxX + 2, maxZ + 2, true, true, false);
 
             if (applied)
             {
