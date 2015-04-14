@@ -811,7 +811,7 @@ namespace TerraformTool
                         originalHeight = (int)m_rawHeights[i * (b + 1) + j];
                         if (this.m_mode == InGameTerrainTool.Mode.Shift)
                         {
-                            targetHeight = Mathf.Clamp(originalHeight + this.m_trenchDepth * (this.m_mouseLeftDown ? 1 : -1), 0, 65535);
+                            targetHeight = Mathf.Clamp(originalHeight + this.m_trenchDepth * c * (this.m_mouseLeftDown ? 1 : -1), 0, 65535);
                         }
                         else if (this.m_mode == InGameTerrainTool.Mode.Level)
                         {
