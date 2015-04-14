@@ -828,10 +828,22 @@ namespace TerraformTool
                 num7 = 1f / num7;
             }
             float num8 = 20f;
-            int minX = Mathf.Max((int)((mousePosition.x - brushRadius) / TerrainManager.RAW_CELL_SIZE + (float)TerrainManager.RAW_RESOLUTION * 0.5f), 0);
-            int minZ = Mathf.Max((int)((mousePosition.z - brushRadius) / TerrainManager.RAW_CELL_SIZE + (float)TerrainManager.RAW_RESOLUTION * 0.5f), 0);
-            int maxX = Mathf.Min((int)((mousePosition.x + brushRadius) / TerrainManager.RAW_CELL_SIZE + (float)TerrainManager.RAW_RESOLUTION * 0.5f) + 1, TerrainManager.RAW_RESOLUTION);
-            int maxZ = Mathf.Min((int)((mousePosition.z + brushRadius) / TerrainManager.RAW_CELL_SIZE + (float)TerrainManager.RAW_RESOLUTION * 0.5f) + 1, TerrainManager.RAW_RESOLUTION);
+
+            //more readable format; changed type casting method for minX - maxZ:
+            //from truncation to ceil() for min's and floor() for max's  @SimsFirehouse
+            float a = TerrainManager.RAW_CELL_SIZE;
+            int b = TerrainManager.RAW_RESOLUTION;
+
+            Vector3 mouse = this.m_mousePosition;
+            mouse.y = 0f;
+
+            Vector3 coords = new Vector3(b / 2, 0f, b / 2);
+
+            int minX = Mathf.Max(Mathf.CeilToInt((mouse.x - brushRadius) / a + coords.x), 2);
+            int minZ = Mathf.Max(Mathf.CeilToInt((mouse.z - brushRadius) / a + coords.z), 2);
+            int maxX = Mathf.Min(Mathf.FloorToInt((mouse.x + brushRadius) / a + coords.x), b - 2);
+            int maxZ = Mathf.Min(Mathf.FloorToInt((mouse.z + brushRadius) / a + coords.z), b - 2); 
+            
             if (this.m_mode == InGameTerrainTool.Mode.Shift)
             {
                 if (this.m_mouseRightDown)
