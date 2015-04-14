@@ -98,7 +98,7 @@ namespace TerraformTool
         private int m_costMultiplier = 50;
         public static ConfigData Config;
 
-        public int m_trenchDepth = 750;
+        public int m_trenchDepth = 3;
         public int trenchSize = 3;
 
         private ushort[] m_rawHeights = Singleton<TerrainManager>.instance.RawHeights;
@@ -367,7 +367,7 @@ namespace TerraformTool
             ModeSettings[Mode.Soften] = new ToolSettings(48, 0.1f);
             ModeSettings[Mode.Slope] = new ToolSettings(24, 0.5f);
             ModeSettings[Mode.ResourceSand] = new ToolSettings(48, 0.5f);
-            ModeSettings[Mode.Point] = new ToolSettings(24, 0.5f);
+            ModeSettings[Mode.Point] = new ToolSettings(24, 0.4f);
 
             this.m_undoList = new List<InGameTerrainTool.UndoStroke>();
             if (Singleton<LoadingManager>.exists)
@@ -438,29 +438,26 @@ namespace TerraformTool
             {
                 this.Undo();
             }
-            if(m_mode != Mode.Point)
+            //changed brush setting here  @SimsFirehouse
+            if (this.m_IncreaseBrushSizeKey.IsPressed(current))
             {
-                //changed brush setting here  @SimsFirehouse
-                if (this.m_IncreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
-                {
-                    m_brushSize = Mathf.Min(320, m_brushSize + 8);
-                    UpdateSettings();
-                }
-                if (this.m_DecreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
-                {
-                    m_brushSize = Mathf.Max(16, m_brushSize - 8);
-                    UpdateSettings();
-                }
-                if (this.m_IncreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
-                {
-                    m_strength = Mathf.Min(0.5f, m_strength + 0.1f);
-                    UpdateSettings();
-                }
-                if (this.m_DecreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
-                {
-                    m_strength = Mathf.Max(0.1f, m_strength - 0.1f);
-                    UpdateSettings();
-                }
+                m_brushSize = Mathf.Min(320, m_brushSize + 8);
+                UpdateSettings();
+            }
+            if (this.m_DecreaseBrushSizeKey.IsPressed(current))
+            {
+                m_brushSize = Mathf.Max(16, m_brushSize - 8);
+                UpdateSettings();
+            }
+            if (this.m_IncreaseBrushStrengthKey.IsPressed(current))
+            {
+                m_strength = Mathf.Min(0.5f, m_strength + 0.1f);
+                UpdateSettings();
+            }
+            if (this.m_DecreaseBrushStrengthKey.IsPressed(current))
+            {
+                m_strength = Mathf.Max(0.1f, m_strength - 0.1f);
+                UpdateSettings();
             }
         }
 
@@ -785,8 +782,9 @@ namespace TerraformTool
                     //changing ditch tool behavior  @SimsFirehouse
                     if (this.m_mode == InGameTerrainTool.Mode.Point)
                     {
+                        int elevationStep = (int)(this.m_strength * 10);
                         originalHeight = (int)this.m_backupHeights[i * (b + 1) + j];
-                        int diff = this.m_trenchDepth * (this.m_mouseLeftDown ? 1 : -1);
+                        int diff = this.m_trenchDepth * c * elevationStep * (this.m_mouseLeftDown ? 1 : -1);
 
                         endHeight = (ushort)Mathf.Clamp(originalHeight + diff, 0, 65535);
                     }
