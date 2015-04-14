@@ -260,7 +260,7 @@ namespace TerraformTool
             Color color2 = Color.yellow;
             Color color3 = new Color(0.3f, 0.3f, 0.3f);
 
-            if (this.m_mouseRayValid && this.enabled)
+            if (this.m_mouseRayValid && this.enabled && this.m_mode != InGameTerrainTool.Mode.ResourceSand)
             {
                 Vector3 mouse = this.m_mousePosition;
                 mouse.y = 0f;
