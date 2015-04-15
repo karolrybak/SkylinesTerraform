@@ -379,7 +379,7 @@ namespace TerraformTool
                     this.m_mouseLeftDown = true;
                     if (this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
-                        this.m_endPosition = SnapToTerrain(this.m_mousePosition);
+                        this.m_endPosition = SnapToTerrain(this.m_mousePosition, true);
                     }
                 }
                 else if (current.button == 1)
@@ -390,7 +390,7 @@ namespace TerraformTool
                     }
                     else if (this.m_mode == InGameTerrainTool.Mode.Level || this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
-                        this.m_startPosition = SnapToTerrain(this.m_mousePosition);
+                        this.m_startPosition = SnapToTerrain(this.m_mousePosition, true);
                     }
                 }
             }
@@ -790,6 +790,8 @@ namespace TerraformTool
             ushort endHeight = 0;
             int smoothStrength = this.m_mouseRightDown ? (int)(this.m_strength * 20 + 2) : (int)(this.m_strength * 10 + 1);
             //2-6 when left click, 4-12 when right click
+
+            this.m_startPosition.y = this.m_rawHeights[(int)this.ConvertCoords(this.m_startPosition.z) * 1081 + (int)this.ConvertCoords(this.m_startPosition.x)] / 64;
 
             for (int i = minZ; i <= maxZ; i++)
             {
