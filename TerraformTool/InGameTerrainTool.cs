@@ -766,16 +766,16 @@ namespace TerraformTool
             
             this.m_startPosition = new Vector3
             {
-                x = Mathf.RoundtoInt(m_startPosition.x / a) * a,
-                z = Mathf.RoundtoInt(m_startPosition.z / a) * a,
+                x = Mathf.RoundToInt(m_startPosition.x / a) * a,
+                z = Mathf.RoundToInt(m_startPosition.z / a) * a,
             };
-            this.m_startPosition.y = this.m_rawHeights[(this.m_startPosition.z / a + coords.z) * (b + 1) + (this.m_startPosition.x / a + coords.x)] / c
+            this.m_startPosition.y = this.m_rawHeights[(int)(this.m_startPosition.z / a + coords.z) * (b + 1) + (int)(this.m_startPosition.x / a + coords.x)] / c;
             this.m_endPosition = new Vector3
             {
-                x = Mathf.RoundtoInt(m_endPosition.x / a) * a,
-                z = Mathf.RoundtoInt(m_endPosition.z / a) * a,
+                x = Mathf.RoundToInt(m_endPosition.x / a) * a,
+                z = Mathf.RoundToInt(m_endPosition.z / a) * a,
             };
-            this.m_endPosition.y = this.m_rawHeights[(this.m_endPosition.z / a + coords.z) * (b + 1) + (this.m_endPosition.x / a + coords.x)] / c
+            this.m_endPosition.y = this.m_rawHeights[(int)(this.m_endPosition.z / a + coords.z) * (b + 1) + (int)(this.m_endPosition.x / a + coords.x)] / c;
 
             int minX = Mathf.Max(Mathf.CeilToInt((mouse.x - brushRadius) / a + coords.x), 2);
             int minZ = Mathf.Max(Mathf.CeilToInt((mouse.z - brushRadius) / a + coords.z), 2);
