@@ -757,10 +757,6 @@ namespace TerraformTool
 
             Vector3 mouse = this.m_mousePosition;
             mouse.y = 0f;
-            Vector3 vector = this.m_endPosition - this.m_startPosition;
-            vector.y = 0f;
-            Vector3 startPos = this.m_startPosition;
-            startPos.y = 0f;
 
             Vector3 coords = new Vector3(b / 2, 0f, b / 2);
             
@@ -776,6 +772,11 @@ namespace TerraformTool
                 z = Mathf.RoundToInt(m_endPosition.z / a) * a,
             };
             this.m_endPosition.y = this.m_rawHeights[(int)(this.m_endPosition.z / a + coords.z) * (b + 1) + (int)(this.m_endPosition.x / a + coords.x)] / c;
+
+            Vector3 vector = this.m_endPosition - this.m_startPosition;
+            vector.y = 0f;
+            Vector3 startPos = this.m_startPosition;
+            startPos.y = 0f;
 
             int minX = Mathf.Max(Mathf.CeilToInt((mouse.x - brushRadius) / a + coords.x), 2);
             int minZ = Mathf.Max(Mathf.CeilToInt((mouse.z - brushRadius) / a + coords.z), 2);
