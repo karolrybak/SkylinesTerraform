@@ -815,7 +815,7 @@ namespace TerraformTool
                         }
                         else if (this.m_mode == InGameTerrainTool.Mode.Level)
                         {
-                            targetHeight = this.m_startPosition.y * c;
+                            targetHeight = Mathf.Clamp(this.m_startPosition.y * c, 0f, 65535f);
                         }
                         else if (this.m_mode == InGameTerrainTool.Mode.Soften)
                         {
@@ -864,7 +864,7 @@ namespace TerraformTool
 
                 }
             }
-            TerrainModify.UpdateArea(minX - 2, minZ - 2, maxX + 2, maxZ + 2, true, true, false);
+            TerrainModify.UpdateArea(minX - 1, minZ - 1, maxX + 1, maxZ + 1, true, true, false);
 
             if (applied)
             {
