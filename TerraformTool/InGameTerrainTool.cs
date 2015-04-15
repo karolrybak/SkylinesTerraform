@@ -314,7 +314,7 @@ namespace TerraformTool
                         OverlayEffect.DrawCircle(cameraInfo, color2, this.m_endPosition, 9f, -1f, 1025f, false, true);
                         if (!this.m_strokeInProgress)
                         {
-                            Vector3 pointerPosition = SnapToTerrain(this.m_mousePosition, true);
+                            Vector3 pointerPosition = SnapToTerrain(this.m_mousePosition);
                             OverlayEffect.DrawCircle(cameraInfo, color2, pointerPosition, 9f, -1f, 1025f, false, true);
                         }
                     }
@@ -379,7 +379,7 @@ namespace TerraformTool
                     this.m_mouseLeftDown = true;
                     if (this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
-                        this.m_endPosition = SnapToTerrain(this.m_mousePosition, true);
+                        this.m_endPosition = SnapToTerrain(this.m_mousePosition);
                     }
                 }
                 else if (current.button == 1)
@@ -390,7 +390,7 @@ namespace TerraformTool
                     }
                     else if (this.m_mode == InGameTerrainTool.Mode.Level || this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
-                        this.m_startPosition = SnapToTerrain(this.m_mousePosition, true);
+                        this.m_startPosition = SnapToTerrain(this.m_mousePosition);
                     }
                 }
             }
@@ -736,12 +736,10 @@ namespace TerraformTool
             }
         }
 
-        private Vector3 SnapToTerrain(Vector3 mouse, bool zeroY = false)
+        private Vector3 SnapToTerrain(Vector3 mouse)
         {
             float cellSize = 16f;
-            Vector3 outVector = new Vector3(Mathf.RoundToInt(mouse.x / cellSize), 0f, Mathf.RoundToInt(mouse.z / cellSize)) * cellSize;
-            outVector.y = zeroY ? 0f : this.m_rawHeights[(int)this.ConvertCoords(outVector.z) * 1081 + (int)this.ConvertCoords(outVector.x)] / 64;
-            return outVector;
+            return new Vector3(Mathf.RoundToInt(mouse.x / cellSize), 0f, Mathf.RoundToInt(mouse.z / cellSize)) * cellSize;
         }
 
         private float ConvertCoords(float coords, bool ScreenToTerrain = true)
