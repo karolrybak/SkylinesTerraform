@@ -387,17 +387,30 @@ namespace TerraformTool
                 if (current.button == 0)
                 {
                     this.m_mouseLeftDown = true;
-                    this.m_endPosition = this.m_mousePosition;
+                    if (this.m_mode == InGameTerrainTool.Mode.Slope)
+                    {
+                        float a = TerrainManager.RAW_CELL_SIZE;
+                        this.m_endPosition = new Vector3
+                        {
+                            x = Mathf.RoundToInt(this.m_mousePosition.x / a) * a,
+                            z = Mathf.RoundToInt(this.m_mousePosition.z / a) * a,
+                        };
+                    }
                 }
                 else if (current.button == 1)
                 {
-                    if (this.m_mode == InGameTerrainTool.Mode.Shift || this.m_mode == InGameTerrainTool.Mode.Soften || this.m_mode == InGameTerrainTool.Mode.ResourceSand || this.m_mode == InGameTerrainTool.Mode.Point)
+                    if (this.m_mode == InGameTerrainTool.Mode.Shift || this.m_mode == InGameTerrainTool.Mode.Point)
                     {
                         this.m_mouseRightDown = true;
                     }
                     else if (this.m_mode == InGameTerrainTool.Mode.Level || this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
-                        this.m_startPosition = this.m_mousePosition;
+                        float a = TerrainManager.RAW_CELL_SIZE;
+                        this.m_startPosition = new Vector3
+                        {
+                            x = Mathf.RoundToInt(this.m_mousePosition.x / a) * a,
+                            z = Mathf.RoundToInt(this.m_mousePosition.z / a) * a,
+                        };
                     }
                 }
             }
@@ -769,17 +782,7 @@ namespace TerraformTool
 
             Vector3 coords = new Vector3(b / 2, 0f, b / 2);
             
-            this.m_startPosition = new Vector3
-            {
-                x = Mathf.RoundToInt(this.m_startPosition.x / a) * a,
-                z = Mathf.RoundToInt(this.m_startPosition.z / a) * a,
-            };
             this.m_startPosition.y = this.m_rawHeights[(int)(this.m_startPosition.z / a + coords.z) * (b + 1) + (int)(this.m_startPosition.x / a + coords.x)] / c;
-            this.m_endPosition = new Vector3
-            {
-                x = Mathf.RoundToInt(this.m_endPosition.x / a) * a,
-                z = Mathf.RoundToInt(this.m_endPosition.z / a) * a,
-            };
             this.m_endPosition.y = this.m_rawHeights[(int)(this.m_endPosition.z / a + coords.z) * (b + 1) + (int)(this.m_endPosition.x / a + coords.x)] / c;
 
             Vector3 vector = this.m_endPosition - this.m_startPosition;
