@@ -59,8 +59,7 @@ namespace TerraformTool
         public CursorInfo m_softenCursor;
         public CursorInfo m_slopeCursor;
         private Vector3 m_mousePosition;
-        internal Vector3 m_startPosition;
-        private Vector3 m_strokeStartPosition;
+        private Vector3 m_startPosition;
         private Vector3 m_endPosition;
         private Ray m_mouseRay;
         private float m_mouseRayLength;
@@ -313,32 +312,14 @@ namespace TerraformTool
 
                     }
                 }
-
-                if (!this.m_strokeInProgress)
+                
+                if (this.m_mode == InGameTerrainTool.Mode.Level || this.m_mode == InGameTerrainTool.Mode.Slope)
                 {
-                    this.m_strokeStartPosition = new Vector3
+                    if (this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
-                        x = Mathf.RoundToInt(mouse.x / a) * a,
-                        z = Mathf.RoundToInt(mouse.z / a) * a,
-                    };
-                }
-                if (this.m_mode == InGameTerrainTool.Mode.Point)
-                {
-                    OverlayEffect.DrawCircle(cameraInfo, color2, this.m_strokeStartPosition, 9f, -1f, 1025f, false, true);
-
-                }
-                else
-                {
-                    if (this.m_mode == InGameTerrainTool.Mode.Level || this.m_mode == InGameTerrainTool.Mode.Slope)
-                    {
-                        Vector3 samplePosition = new Vector3
-                        {
-                            x = Mathf.RoundToInt(this.m_startPosition.x / a) * a,
-                            z = Mathf.RoundToInt(this.m_startPosition.z / a) * a,
-                        };
-                        OverlayEffect.DrawCircle(cameraInfo, color2, samplePosition, 9f, -1f, 1025f, false, true);
-                        OverlayEffect.DrawCircle(cameraInfo, color2, this.m_strokeStartPosition, 9f, -1f, 1025f, false, true);
+                        OverlayEffect.DrawCircle(cameraInfo, color2, this.m_endPosition, 9f, -1f, 1025f, false, true);
                     }
+                    OverlayEffect.DrawCircle(cameraInfo, color2, this.m_startPosition, 9f, -1f, 1025f, false, true);
                 }
             }
 
@@ -782,6 +763,19 @@ namespace TerraformTool
             startPos.y = 0f;
 
             Vector3 coords = new Vector3(b / 2, 0f, b / 2);
+            
+            this.m_startPosition = new Vector3
+            {
+                x = Mathf.RoundtoInt(m_startPosition.x / a) * a,
+                z = Mathf.RoundtoInt(m_startPosition.z / a) * a,
+            };
+            this.m_startPosition.y = this.m_rawHeights[(this.m_startPosition.z / a + coords.z) * (b + 1) + (this.m_startPosition.x / a + coords.x)] / c
+            this.m_endPosition = new Vector3
+            {
+                x = Mathf.RoundtoInt(m_endPosition.x / a) * a,
+                z = Mathf.RoundtoInt(m_endPosition.z / a) * a,
+            };
+            this.m_endPosition.y = this.m_rawHeights[(this.m_endPosition.z / a + coords.z) * (b + 1) + (this.m_endPosition.x / a + coords.x)] / c
 
             int minX = Mathf.Max(Mathf.CeilToInt((mouse.x - brushRadius) / a + coords.x), 2);
             int minZ = Mathf.Max(Mathf.CeilToInt((mouse.z - brushRadius) / a + coords.z), 2);
