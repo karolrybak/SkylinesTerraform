@@ -754,7 +754,6 @@ namespace TerraformTool
             return new Vector3
             {
                 x = this.ConvertCoords(Pos.x, ScreenToTerrain),
-                y = this.ConvertCoords(Pos.y, ScreenToTerrain),
                 z = this.ConvertCoords(Pos.z, ScreenToTerrain)
             };
         }
