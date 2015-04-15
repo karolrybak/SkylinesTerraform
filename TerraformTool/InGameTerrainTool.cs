@@ -740,7 +740,7 @@ namespace TerraformTool
         {
             float cellSize = 16f;
             Vector3 outVector = new Vector3(Mathf.RoundToInt(mouse.x / cellSize), 0f, Mathf.RoundToInt(mouse.z / cellSize)) * cellSize;
-            outVector.y = zeroY ? 0f : this.m_rawHeights[(int)this.ConvertCoords(outVector.z) * 1081 + (int)this.ConvertCoords(outVector.x)];
+            outVector.y = zeroY ? 0f : this.m_rawHeights[(int)this.ConvertCoords(outVector.z) * 1081 + (int)this.ConvertCoords(outVector.x)] / 64;
             return outVector;
         }
 
@@ -805,9 +805,11 @@ namespace TerraformTool
                     else
                     {
                         Vector3 position = this.ConvertCoords(new Vector3(j, 0f, i), false);
+                        Vector3 mousePos = this.m_mousePosition;
+                        mousePos.y = 0f;
                         float brushRadius = this.m_brushSize * 0.5f;
                         float targetHeight = 0f;
-                        float t1 = Mathf.Clamp(1 - (position - this.m_mousePosition).sqrMagnitude / (brushRadius * brushRadius), 0f, 1f);
+                        float t1 = Mathf.Clamp(1 - (position - mousePos).sqrMagnitude / (brushRadius * brushRadius), 0f, 1f);
                         originalHeight = (int)this.m_rawHeights[i * 1081 + j];
                         if (this.m_mode == InGameTerrainTool.Mode.Shift)
                         {
