@@ -763,18 +763,17 @@ namespace TerraformTool
         {
             int res = 1080;
             float brushRadius = this.m_brushSize / 2;
-            if (screenPos)
-            {
-                minX = Mathf.CeilToInt(this.m_mousePosition.x - brushRadius);
-                minZ = Mathf.CeilToInt(this.m_mousePosition.z - brushRadius);
-                maxX = Mathf.FloorToInt(this.m_mousePosition.x + brushRadius);
-                maxZ = Mathf.FloorToInt(this.m_mousePosition.z + brushRadius);
-                return;
-            }
             minX = Mathf.Max(Mathf.CeilToInt(this.ConvertCoords(this.m_mousePosition.x - brushRadius)), 1);
             minZ = Mathf.Max(Mathf.CeilToInt(this.ConvertCoords(this.m_mousePosition.z - brushRadius)), 1);
             maxX = Mathf.Min(Mathf.FloorToInt(this.ConvertCoords(this.m_mousePosition.x + brushRadius)), res - 1);
             maxZ = Mathf.Min(Mathf.FloorToInt(this.ConvertCoords(this.m_mousePosition.z + brushRadius)), res - 1);
+            if (screenPos)
+            {
+                minX = (int)this.ConvertCoords(minX, false);
+                minZ = (int)this.ConvertCoords(minZ, false);
+                maxX = (int)this.ConvertCoords(maxX, false);
+                maxZ = (int)this.ConvertCoords(maxZ, false);
+            }
         }
         //merged ApplyPoint() into ApplyBrush()  @SimsFirehouse
 
