@@ -399,7 +399,7 @@ namespace TerraformTool
                 }
                 else if (current.button == 1)
                 {
-                    if (this.m_mode == InGameTerrainTool.Mode.Shift || this.m_mode == InGameTerrainTool.Mode.Point)
+                    if (this.m_mode == InGameTerrainTool.Mode.Shift || this.m_mode == InGameTerrainTool.Mode.Point || this.m_mode == InGameTerrainTool.Mode.Soften)
                     {
                         this.m_mouseRightDown = true;
                     }
@@ -767,7 +767,8 @@ namespace TerraformTool
             bool applied = false;
             //BrushData isn't necessary anymore  @SimsFirehouse
             float brushRadius = this.m_brushSize * 0.5f;
-            int smoothStrength = this.m_mouseRightDown ? 10 : 3;
+            int smoothStrength = this.m_mouseRightDown ? (int)(this.m_strength * 20 + 2) : (int)(this.m_strength * 10 + 1);
+            //2-6 when left click, 4-12 when right click
 
             //more readable format; changed type casting method for minX - maxZ:
             //from truncation to ceil() for min's and floor() for max's  @SimsFirehouse
