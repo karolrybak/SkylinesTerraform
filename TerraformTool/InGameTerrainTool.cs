@@ -318,6 +318,15 @@ namespace TerraformTool
                     if (this.m_mode == InGameTerrainTool.Mode.Slope)
                     {
                         OverlayEffect.DrawCircle(cameraInfo, color2, this.m_endPosition, 9f, -1f, 1025f, false, true);
+                        if (!this.m_strokeInProgress)
+                        {
+                            Vector3 pointerPosition = new Vector3
+                            {
+                                x = Mathf.RoundToInt(this.m_mousePosition.x / a) * a,
+                                z = Mathf.RoundToInt(this.m_mousePosition.z / a) * a,
+                            };
+                            OverlayEffect.DrawCircle(cameraInfo, color2, pointerPosition, 9f, -1f, 1025f, false, true);
+                        }
                     }
                     OverlayEffect.DrawCircle(cameraInfo, color2, this.m_startPosition, 9f, -1f, 1025f, false, true);
                 }
@@ -762,14 +771,14 @@ namespace TerraformTool
             
             this.m_startPosition = new Vector3
             {
-                x = Mathf.RoundToInt(m_startPosition.x / a) * a,
-                z = Mathf.RoundToInt(m_startPosition.z / a) * a,
+                x = Mathf.RoundToInt(this.m_startPosition.x / a) * a,
+                z = Mathf.RoundToInt(this.m_startPosition.z / a) * a,
             };
             this.m_startPosition.y = this.m_rawHeights[(int)(this.m_startPosition.z / a + coords.z) * (b + 1) + (int)(this.m_startPosition.x / a + coords.x)] / c;
             this.m_endPosition = new Vector3
             {
-                x = Mathf.RoundToInt(m_endPosition.x / a) * a,
-                z = Mathf.RoundToInt(m_endPosition.z / a) * a,
+                x = Mathf.RoundToInt(this.m_endPosition.x / a) * a,
+                z = Mathf.RoundToInt(this.m_endPosition.z / a) * a,
             };
             this.m_endPosition.y = this.m_rawHeights[(int)(this.m_endPosition.z / a + coords.z) * (b + 1) + (int)(this.m_endPosition.x / a + coords.x)] / c;
 
@@ -802,11 +811,11 @@ namespace TerraformTool
                         //rewritten the whole block  @SimsFirehouse
                         Vector3 position = new Vector3(j, 0f, i);
                         float targetHeight = 0f;
-                        float t1 = Mathf.Clamp(1 - (position - mouse / a - coords).magnitude / (brushRadius / a), 0f, 1f);
+                        float t1 = Mathf.Clamp(1 - (position - mouse / a - coords).sqrMagnitude / ((brushRadius / a) * (brushRadius / a)), 0f, 1f);
                         originalHeight = (int)m_rawHeights[i * (b + 1) + j];
                         if (this.m_mode == InGameTerrainTool.Mode.Shift)
                         {
-                            targetHeight = Mathf.Clamp(originalHeight + this.m_trenchDepth * c * (this.m_mouseLeftDown ? 1 : -1), 0, 65535);
+                            targetHeight = Mathf.Clamp(originalHeight + this.m_trenchDepth * c * (this.m_mouseLeftDown ? 1 : -1), 0f, 65535f);
                         }
                         else if (this.m_mode == InGameTerrainTool.Mode.Level)
                         {
