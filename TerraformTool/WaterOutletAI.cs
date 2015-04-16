@@ -27,15 +27,15 @@ namespace TerraformTool
         [CustomizableProperty("NoiseRadius", "Pollution")]
         public float m_noiseRadius = 100f;
 
-        int m_consumption_multiplier = 750;
-        int m_bufferMultiplier = 10;
+        const int m_consumption_multiplier = 750;
+        const int m_bufferMultiplier = 10;
 
         public override void GetImmaterialResourceRadius(ushort buildingID, ref Building data, out ImmaterialResourceManager.Resource resource1, out float radius1, out ImmaterialResourceManager.Resource resource2, out float radius2)
         {
-            if (this.m_noiseAccumulation != 0)
+            if (m_noiseAccumulation != 0)
             {
                 resource1 = ImmaterialResourceManager.Resource.NoisePollution;
-                radius1 = this.m_noiseRadius;
+                radius1 = m_noiseRadius;
             }
             else
             {
@@ -53,33 +53,29 @@ namespace TerraformTool
                 {
                     return Singleton<InfoManager>.instance.m_properties.m_modeProperties[(int)infoMode].m_inactiveColor;
                 }
-                if (this.m_waterIntake != 0)
-                {
-                    return Singleton<InfoManager>.instance.m_properties.m_modeProperties[(int)infoMode].m_activeColor;
-                }
-                //if (this.m_sewageOutlet != 0)
+				return m_waterIntake != 0 ? Singleton<InfoManager>.instance.m_properties.m_modeProperties [(int)infoMode].m_activeColor : base.GetColor (buildingID, ref data, infoMode);
+                //if (m_sewageOutlet != 0)
                 //{
                 //    return Singleton<InfoManager>.instance.m_properties.m_modeProperties[(int)infoMode].m_activeColorB;
                 //}
-                return base.GetColor(buildingID, ref data, infoMode);
             }
             else
             {
                 if (infoMode == InfoManager.InfoMode.NoisePollution)
                 {
-                    int noiseAccumulation = this.m_noiseAccumulation;
+                    int noiseAccumulation = m_noiseAccumulation;
                     return CommonBuildingAI.GetNoisePollutionColor((float)noiseAccumulation);
                 }
                 if (infoMode != InfoManager.InfoMode.Pollution)
                 {
                     return base.GetColor(buildingID, ref data, infoMode);
                 }
-                if (this.m_waterIntake != 0)
+                if (m_waterIntake != 0)
                 {
                     float t = Mathf.Clamp01((float)data.m_waterPollution * 0.0117647061f);
                     return ColorUtils.LinearLerp(Singleton<InfoManager>.instance.m_properties.m_neutralColor, Singleton<InfoManager>.instance.m_properties.m_modeProperties[(int)infoMode].m_activeColor, t);
                 }
-                //if (this.m_sewageOutlet != 0)
+                //if (m_sewageOutlet != 0)
                 //{
                 //    return Singleton<InfoManager>.instance.m_properties.m_modeProperties[(int)infoMode].m_activeColor;
                 //}
@@ -89,19 +85,15 @@ namespace TerraformTool
 
         public override int GetResourceRate(ushort buildingID, ref Building data, ImmaterialResourceManager.Resource resource)
         {
-            if (resource == ImmaterialResourceManager.Resource.NoisePollution)
-            {
-                return this.m_noiseAccumulation;
-            }
-            return base.GetResourceRate(buildingID, ref data, resource);
+            return resource == ImmaterialResourceManager.Resource.NoisePollution ? m_noiseAccumulation : base.GetResourceRate (buildingID, ref data, resource);
         }
 
         public override int GetWaterRate(ushort buildingID, ref Building data)
         {
             int productionRate = (int)data.m_productionRate;
-            int budget = Singleton<EconomyManager>.instance.GetBudget(this.m_info.m_class);
+            int budget = Singleton<EconomyManager>.instance.GetBudget(m_info.m_class);
             productionRate = PlayerBuildingAI.GetProductionRate(productionRate, budget);
-            return productionRate * (this.m_waterConsumption) / 100;
+            return productionRate * (m_waterConsumption) / 100;
         }
 
         public override void GetPlacementInfoMode(out InfoManager.InfoMode mode, out InfoManager.SubInfoMode subMode)
@@ -113,34 +105,30 @@ namespace TerraformTool
         public override void CreateBuilding(ushort buildingID, ref Building data)
         {
             base.CreateBuilding(buildingID, ref data);
-            int workCount = this.m_workPlaceCount0 + this.m_workPlaceCount1 + this.m_workPlaceCount2 + this.m_workPlaceCount3;
+            int workCount = m_workPlaceCount0 + m_workPlaceCount1 + m_workPlaceCount2 + m_workPlaceCount3;
             Singleton<CitizenManager>.instance.CreateUnits(out data.m_citizenUnits, ref Singleton<SimulationManager>.instance.m_randomizer, buildingID, 0, 0, workCount, 0, 0, 0);
         }
 
-        public override void ReleaseBuilding(ushort buildingID, ref Building data)
-        {
-            base.ReleaseBuilding(buildingID, ref data);
-        }
 
         protected override void ManualActivation(ushort buildingID, ref Building buildingData)
         {
             Vector3 position = buildingData.m_position;
-            position.y += this.m_info.m_size.y;
+            position.y += m_info.m_size.y;
             Singleton<NotificationManager>.instance.AddEvent(NotificationEvent.Type.GainWater, position, 1.5f);
-            if (this.m_noiseAccumulation != 0)
+            if (m_noiseAccumulation != 0)
             {
-                Singleton<NotificationManager>.instance.AddWaveEvent(buildingData.m_position, NotificationEvent.Type.Sad, ImmaterialResourceManager.Resource.NoisePollution, (float)this.m_noiseAccumulation, this.m_noiseRadius);
+                Singleton<NotificationManager>.instance.AddWaveEvent(buildingData.m_position, NotificationEvent.Type.Sad, ImmaterialResourceManager.Resource.NoisePollution, (float)m_noiseAccumulation, m_noiseRadius);
             }
         }
 
         protected override void ManualDeactivation(ushort buildingID, ref Building buildingData)
         {
             Vector3 position = buildingData.m_position;
-            position.y += this.m_info.m_size.y;
+            position.y += m_info.m_size.y;
             Singleton<NotificationManager>.instance.AddEvent(NotificationEvent.Type.LoseWater, position, 1.5f);
-            if (this.m_noiseAccumulation != 0)
+            if (m_noiseAccumulation != 0)
             {
-                Singleton<NotificationManager>.instance.AddWaveEvent(buildingData.m_position, NotificationEvent.Type.Happy, ImmaterialResourceManager.Resource.NoisePollution, (float)(-(float)this.m_noiseAccumulation), this.m_noiseRadius);
+                Singleton<NotificationManager>.instance.AddWaveEvent(buildingData.m_position, NotificationEvent.Type.Happy, ImmaterialResourceManager.Resource.NoisePollution, (float)(-(float)m_noiseAccumulation), m_noiseRadius);
             }
         }
 
@@ -157,9 +145,9 @@ namespace TerraformTool
 
         protected override void HandleWorkAndVisitPlaces(ushort buildingID, ref Building buildingData, ref Citizen.BehaviourData behaviour, ref int aliveWorkerCount, ref int totalWorkerCount, ref int workPlaceCount, ref int aliveVisitorCount, ref int totalVisitorCount, ref int visitPlaceCount)
         {
-            workPlaceCount += this.m_workPlaceCount0 + this.m_workPlaceCount1 + this.m_workPlaceCount2 + this.m_workPlaceCount3;
-            base.GetWorkBehaviour(buildingID, ref buildingData, ref behaviour, ref aliveWorkerCount, ref totalWorkerCount);
-            base.HandleWorkPlaces(buildingID, ref buildingData, this.m_workPlaceCount0, this.m_workPlaceCount1, this.m_workPlaceCount2, this.m_workPlaceCount3, ref behaviour, aliveWorkerCount, totalWorkerCount);
+            workPlaceCount += m_workPlaceCount0 + m_workPlaceCount1 + m_workPlaceCount2 + m_workPlaceCount3;
+            GetWorkBehaviour (buildingID, ref buildingData, ref behaviour, ref aliveWorkerCount, ref totalWorkerCount);
+            HandleWorkPlaces (buildingID, ref buildingData, m_workPlaceCount0, m_workPlaceCount1, m_workPlaceCount2, m_workPlaceCount3, ref behaviour, aliveWorkerCount, totalWorkerCount);
         }
 
         protected override void ProduceGoods(ushort buildingID, ref Building buildingData, ref Building.Frame frameData, int productionRate, ref Citizen.BehaviourData behaviour, int aliveWorkerCount, int totalWorkerCount, int workPlaceCount, int aliveVisitorCount, int totalVisitorCount, int visitPlaceCount)
@@ -196,7 +184,7 @@ namespace TerraformTool
 
             if (waterRate != 0)
             {
-                int bufferedWater = (int)(buildingData.m_waterBuffer * m_bufferMultiplier);
+                int bufferedWater = (buildingData.m_waterBuffer * m_bufferMultiplier);
                 
                 //Debug.Log("bufferedWater = " + bufferedWater);
 
@@ -236,7 +224,7 @@ namespace TerraformTool
                     bufferedWater -= waterFinalRate;
 
                     // Dump water to env
-                    this.HandleWaterSource(buildingID, ref buildingData, true, waterFinalRate, waterFinalRate, this.m_maxWaterDistance);
+                    HandleWaterSource(ref buildingData, true, waterFinalRate, waterFinalRate, m_maxWaterDistance);
 
                 }
 
@@ -262,11 +250,11 @@ namespace TerraformTool
             }
 
 
-            base.HandleDead(buildingID, ref buildingData, ref behaviour, totalWorkerCount);
-            int noiseRate = productionRate * this.m_noiseAccumulation / 100;
+            HandleDead (buildingID, ref buildingData, ref behaviour, totalWorkerCount);
+            int noiseRate = productionRate * m_noiseAccumulation / 100;
             if (noiseRate != 0)
             {
-                Singleton<ImmaterialResourceManager>.instance.AddResource(ImmaterialResourceManager.Resource.NoisePollution, noiseRate, buildingData.m_position, this.m_noiseRadius);
+                Singleton<ImmaterialResourceManager>.instance.AddResource(ImmaterialResourceManager.Resource.NoisePollution, noiseRate, buildingData.m_position, m_noiseRadius);
             }
             base.ProduceGoods(buildingID, ref buildingData, ref frameData, productionRate, ref behaviour, aliveWorkerCount, totalWorkerCount, workPlaceCount, aliveVisitorCount, totalVisitorCount, visitPlaceCount);
         }
@@ -274,7 +262,7 @@ namespace TerraformTool
         {
             return false;
         }
-        private int HandleWaterSource(ushort buildingID, ref Building data, bool output, int rate, int max, float radius)
+        int HandleWaterSource(ref Building data, bool output, int rate, int max, float radius)
         {
             uint num = (uint)(Mathf.Min(rate, max) >> 1);
             if (num == 0u)
@@ -324,7 +312,7 @@ namespace TerraformTool
                         Vector3 vector = sourceData.m_inputPosition;
                         if (!instance.HasWater(VectorUtils.XZ(vector)))
                         {
-                            vector = data.CalculatePosition(this.m_waterLocationOffset);
+                            vector = data.CalculatePosition(m_waterLocationOffset);
                             if (instance.GetClosestWaterPos(ref vector, radius))
                             {
                                 sourceData.m_inputPosition = vector;
@@ -349,7 +337,7 @@ namespace TerraformTool
             }
             else
             {
-                Vector3 vector2 = data.CalculatePosition(this.m_waterLocationOffset);
+                Vector3 vector2 = data.CalculatePosition(m_waterLocationOffset);
 
                 WaterSource sourceData2 = default(WaterSource);
                 sourceData2.m_type = 2;
@@ -360,7 +348,7 @@ namespace TerraformTool
                 {
                     sourceData2.m_outputRate = num + 3u >> 2;
                     sourceData2.m_water = num;
-                    //  sourceData2.m_pollution = num * (uint)this.m_outletPollution / (uint)Mathf.Max(100, waterSimulation.GetPollutionDisposeRate() * 100);
+                    //  sourceData2.m_pollution = num * (uint)m_outletPollution / (uint)Mathf.Max(100, waterSimulation.GetPollutionDisposeRate() * 100);
                     if (!waterSimulation.CreateWaterSource(out data.m_waterSource, sourceData2))
                     {
                         num = 0u;
@@ -374,12 +362,12 @@ namespace TerraformTool
                 }
 
             }
-            return (int)((int)num << 1);
+			return ((int)num << 1);
         }
 
         public override void PlacementSucceeded()
         {
-            if (this.m_waterConsumption != 0)
+            if (m_waterConsumption != 0)
             {
                 BuildingTypeGuide drainPipeMissingGuide = Singleton<WaterManager>.instance.m_drainPipeMissingGuide;
                 if (drainPipeMissingGuide != null)
@@ -387,7 +375,7 @@ namespace TerraformTool
                     drainPipeMissingGuide.Deactivate();
                 }
             }
-            //if (this.m_sewageOutlet != 0)
+            //if (m_sewageOutlet != 0)
             //{
             //    BuildingTypeGuide drainPipeMissingGuide = Singleton<WaterManager>.instance.m_drainPipeMissingGuide;
             //    if (drainPipeMissingGuide != null)
@@ -399,7 +387,7 @@ namespace TerraformTool
 
         public override void UpdateGuide(GuideController guideController)
         {
-            if (this.m_waterConsumption != 0)
+            if (m_waterConsumption != 0)
             {
                 BuildingTypeGuide waterPumpMissingGuide = Singleton<WaterManager>.instance.m_waterPumpMissingGuide;
                 if (waterPumpMissingGuide != null)
@@ -408,7 +396,7 @@ namespace TerraformTool
                     int sewageCapacity = Singleton<DistrictManager>.instance.m_districts.m_buffer[0].GetSewageCapacity();
                     if (waterCapacity == 0 && sewageCapacity != 0)
                     {
-                        waterPumpMissingGuide.Activate(guideController.m_waterPumpMissing, this.m_info);
+                        waterPumpMissingGuide.Activate(guideController.m_waterPumpMissing, m_info);
                     }
                     else
                     {
@@ -422,39 +410,39 @@ namespace TerraformTool
         public override void GetPollutionAccumulation(out int ground, out int noise)
         {
             ground = 0;
-            noise = this.m_noiseAccumulation;
+            noise = m_noiseAccumulation;
         }
 
         public override string GetLocalizedTooltip()
         {
             string text = LocaleFormatter.FormatGeneric("AIINFO_WATER_CONSUMPTION", new object[]
 		{
-			this.GetWaterConsumption() * 16
+			GetWaterConsumption() * 16
 		}) + Environment.NewLine + LocaleFormatter.FormatGeneric("AIINFO_ELECTRICITY_CONSUMPTION", new object[]
 		{
-			this.GetElectricityConsumption() * 16
+			GetElectricityConsumption() * 16
 		});
-            if (this.m_waterConsumption > 0)
+            if (m_waterConsumption > 0)
             {
-                return TooltipHelper.Append(base.GetLocalizedTooltip(), TooltipHelper.Format(new string[]
+                return TooltipHelper.Append(base.GetLocalizedTooltip(), TooltipHelper.Format(new []
 			{
 				LocaleFormatter.Info1,
 				text,
 				LocaleFormatter.Info2,
 				LocaleFormatter.FormatGeneric("AIINFO_WATER_INTAKE", new object[]
 				{
-					this.m_waterConsumption * 16 * m_consumption_multiplier
+					m_waterConsumption * 16 * m_consumption_multiplier
 				})
 			}));
             }
-            return TooltipHelper.Append(base.GetLocalizedTooltip(), TooltipHelper.Format(new string[]
+            return TooltipHelper.Append(base.GetLocalizedTooltip(), TooltipHelper.Format(new []
 		{
 			LocaleFormatter.Info1,
 			text,
 			LocaleFormatter.Info2,
 			LocaleFormatter.FormatGeneric("AIINFO_WATER_OUTLET", new object[]
 			{
-				this.m_waterConsumption * 16  * m_consumption_multiplier
+				m_waterConsumption * 16  * m_consumption_multiplier
 			})
 		}));
         }
@@ -462,9 +450,9 @@ namespace TerraformTool
         public override string GetLocalizedStats(ushort buildingID, ref Building data)
         {
             string text = string.Empty;
-            if (this.m_waterConsumption > 0)
+            if (m_waterConsumption > 0)
             {
-                int num = this.GetWaterRate(buildingID, ref data) * 16 * m_consumption_multiplier;
+                int num = GetWaterRate(buildingID, ref data) * 16 * m_consumption_multiplier;
                 text += LocaleFormatter.FormatGeneric("AIINFO_WATER_INTAKE", new object[]
 			{
 				num
@@ -472,7 +460,7 @@ namespace TerraformTool
             }
             else
             {
-                int num2 = -this.GetWaterRate(buildingID, ref data) * 16 * m_consumption_multiplier;
+                int num2 = -GetWaterRate(buildingID, ref data) * 16 * m_consumption_multiplier;
                 text += LocaleFormatter.FormatGeneric("AIINFO_WATER_OUTLET", new object[] { num2 });
             }
             text += "\nStored water: " + (data.m_waterBuffer * m_bufferMultiplier) + " m³";
