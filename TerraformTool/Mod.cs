@@ -186,28 +186,7 @@ namespace TerraformTool
                     buildTool.m_mode = InGameTerrainTool.Mode.Point;
                     buildTool.enabled = false;
 
-                    //for(uint i = 0; i < PrefabCollection<BuildingInfo>.PrefabCount(); i++)
-                    //{
-                    //    var pf = PrefabCollection<BuildingInfo>.GetPrefab(i);
-                    //    if(pf.name == "Water Outlet")
-                    //    {
-                    //        var oldAI = pf.gameObject.GetComponent<BuildingAI>();
-                    //        //DestroyImmediate(oldAI);
-
-                    //        // add new ai
-
-                    //        var newAI = (BuildingAI)pf.gameObject.AddComponent(typeof(WaterOutletAI));
-
-                    //        TryCopyAttributes(oldAI, newAI);
-
-                    //        pf.TempInitializePrefab();
-                    //        pf.m_buildingAI = newAI;
-
-
-                    //        //pf.m_buildingAI = new WaterOutletAI();
-                    //        Debug.Log(pf.name);
-                    //    }
-                    //}
+                    GameObject.FindObjectOfType<ToolController>().Tools[0].enabled = true;
                 }
             }
             catch (Exception e)
@@ -215,45 +194,6 @@ namespace TerraformTool
                 Debug.Log(e.ToString());
             }
         }
-
-
-        private void TryCopyAttributes(PrefabAI oldAI, PrefabAI newAI)
-        {
-            var oldAIFields =
-                oldAI.GetType()
-                    .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                               BindingFlags.FlattenHierarchy);
-            var newAIFields = newAI.GetType()
-                .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                           BindingFlags.FlattenHierarchy);
-
-            var newAIFieldDic = new Dictionary<String, FieldInfo>(newAIFields.Length);
-            foreach (var field in newAIFields)
-            {
-                newAIFieldDic.Add(field.Name, field);
-            }
-
-            foreach (var fieldInfo in oldAIFields)
-            {
-                if (fieldInfo.IsDefined(typeof(CustomizablePropertyAttribute), true))
-                {
-                    FieldInfo newAIField;
-                    newAIFieldDic.TryGetValue(fieldInfo.Name, out newAIField);
-
-                    try
-                    {
-                        if (newAIField.GetType().Equals(fieldInfo.GetType()))
-                        {
-                            newAIField.SetValue(newAI, fieldInfo.GetValue(oldAI));
-                        }
-                    }
-                    catch (NullReferenceException)
-                    {
-                    }
-                }
-            }
-        }
-
     }
 
 
