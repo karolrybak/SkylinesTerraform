@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace CSL_Traffic.Extensions
+namespace TerraformTool
 {
     public static class TypeExtensions
     {
@@ -18,10 +18,7 @@ namespace CSL_Traffic.Extensions
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic |
                                  BindingFlags.Static | BindingFlags.Instance |
                                  BindingFlags.DeclaredOnly;
-            if (type.BaseType != null)
-                return type.GetFields(flags).Concat(type.BaseType.GetAllFieldsFromType());
-            else
-                return type.GetFields(flags);
+            return type.BaseType != null ? type.GetFields (flags).Concat (type.BaseType.GetAllFieldsFromType ()) : type.GetFields (flags);
         }
 
         /// <summary>
@@ -30,7 +27,7 @@ namespace CSL_Traffic.Extensions
         /// </summary>
         public static FieldInfo GetFieldByName(this Type type, string name)
         {
-            return type.GetAllFieldsFromType().Where(p => p.Name == name).FirstOrDefault();
+			return type.GetAllFieldsFromType ().FirstOrDefault (p => p.Name == name);
         }
     }
 }

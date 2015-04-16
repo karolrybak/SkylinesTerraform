@@ -1,13 +1,14 @@
 ﻿using ColossalFramework.IO;
-using System;
 using System.IO;
 using System.Xml.Serialization;
+
+
 namespace TerraformTool
 {
     public class ConfigData
     {
         public int MoneyModifer = 500;
-        public bool Free = false;
+        public bool Free;
         public static string GetConfigPath()
         {            
             string text = Path.Combine(DataLocation.modsPath, "TerraformTool\\TerraformTool.xml");
@@ -19,19 +20,19 @@ namespace TerraformTool
         }
         public static void Serialize(ConfigData config)
         {
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(ConfigData));
-            using (StreamWriter streamWriter = new StreamWriter(ConfigData.GetConfigPath()))
+            var xmlSerializer = new XmlSerializer(typeof(ConfigData));
+            using (var streamWriter = new StreamWriter(ConfigData.GetConfigPath()))
             {
                 xmlSerializer.Serialize(streamWriter, config);
             }
         }
         public static ConfigData Deserialize()
         {
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(ConfigData));
+            var xmlSerializer = new XmlSerializer(typeof(ConfigData));
             ConfigData result;
             try
             {
-                using (StreamReader streamReader = new StreamReader(ConfigData.GetConfigPath()))
+                using (var streamReader = new StreamReader(ConfigData.GetConfigPath()))
                 {
                     result = (ConfigData)xmlSerializer.Deserialize(streamReader);
                 }

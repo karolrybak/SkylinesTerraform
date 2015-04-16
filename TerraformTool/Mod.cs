@@ -1,6 +1,4 @@
-﻿using ColossalFramework;
-using ColossalFramework.Globalization;
-using ColossalFramework.UI;
+﻿using ColossalFramework.UI;
 using ICities;
 using System;
 using System.Collections.Generic;
@@ -73,13 +71,13 @@ namespace TerraformTool
             terraform_atlas = CreateTextureAtlas("TerraformUI", UIView.GetAView().defaultAtlas.material, spriteNames, "TerraformTool.icon.");
 
         }
-        UITextureAtlas CreateTextureAtlas(string atlasName, Material baseMaterial, string[] spriteNames, string assemblyPath)
+        static UITextureAtlas CreateTextureAtlas(string atlasName, Material baseMaterial, string[] spriteNames, string assemblyPath)
         {
-            var size = 1024;
-            Texture2D atlasTex = new Texture2D(size, size, TextureFormat.ARGB32, false);
+            const int size = 1024;
+            var atlasTex = new Texture2D(size, size, TextureFormat.ARGB32, false);
 
-            Texture2D[] textures = new Texture2D[spriteNames.Length];
-            Rect[] rects = new Rect[spriteNames.Length];
+            var textures = new Texture2D[spriteNames.Length];
+            var rects = new Rect[spriteNames.Length];
 
             for(int i = 0; i < spriteNames.Length; i++)
             {
@@ -92,7 +90,7 @@ namespace TerraformTool
             UITextureAtlas atlas = ScriptableObject.CreateInstance<UITextureAtlas>();
 
             // Setup atlas
-            Material material = Material.Instantiate(baseMaterial);
+            Material material = UnityEngine.Object.Instantiate(baseMaterial);
             material.mainTexture = atlasTex;
             atlas.material = material;
             atlas.name = atlasName;
@@ -100,7 +98,7 @@ namespace TerraformTool
             // Add SpriteInfo
             for (int i = 0; i < spriteNames.Length; i++)
             {
-                var spriteInfo = new UITextureAtlas.SpriteInfo()
+                var spriteInfo = new UITextureAtlas.SpriteInfo 
                 {
                     name = spriteNames[i],
                     texture = atlasTex,
@@ -110,28 +108,28 @@ namespace TerraformTool
             }
             return atlas;
         }
-        Texture2D loadTextureFromAssembly(string path, bool readOnly = true)
+        static Texture2D loadTextureFromAssembly(string path, bool readOnly = true)
         {
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            Assembly assembly = Assembly.GetExecutingAssembly();
             System.IO.Stream textureStream = assembly.GetManifestResourceStream(path);
 
-            byte[] buf = new byte[textureStream.Length];  //declare arraysize
+            var buf = new byte[textureStream.Length];  //declare arraysize
             textureStream.Read(buf, 0, buf.Length); // read from stream to byte array
-            Texture2D tex = new Texture2D(2,2, TextureFormat.ARGB32, false);
+            var tex = new Texture2D(2,2, TextureFormat.ARGB32, false);
             tex.LoadImage(buf);
             tex.Apply(false, readOnly);
             return tex;
         }
-        UITextureAtlas CreateTextureAtlas(string textureFile, string atlasName, Material baseMaterial, int spriteWidth, int spriteHeight, string[] spriteNames)
+        static UITextureAtlas CreateTextureAtlas(string textureFile, string atlasName, Material baseMaterial, int spriteWidth, int spriteHeight, string[] spriteNames)
         {
-            Texture2D tex = new Texture2D(spriteWidth * spriteNames.Length, spriteHeight, TextureFormat.ARGB32, false);
+            var tex = new Texture2D(spriteWidth * spriteNames.Length, spriteHeight, TextureFormat.ARGB32, false);
             tex.filterMode = FilterMode.Bilinear;
 
             { // LoadTexture
-                System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                Assembly assembly = Assembly.GetExecutingAssembly();
                 System.IO.Stream textureStream = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + textureFile);
 
-                byte[] buf = new byte[textureStream.Length];  //declare arraysize
+                var buf = new byte[textureStream.Length];  //declare arraysize
                 textureStream.Read(buf, 0, buf.Length); // read from stream to byte array
 
                 tex.LoadImage(buf);
@@ -142,7 +140,7 @@ namespace TerraformTool
             UITextureAtlas atlas = ScriptableObject.CreateInstance<UITextureAtlas>();
 
             { // Setup atlas
-                Material material = (Material)Material.Instantiate(baseMaterial);
+                Material material = UnityEngine.Object.Instantiate (baseMaterial);
                 material.mainTexture = tex;
 
                 atlas.material = material;
@@ -154,7 +152,7 @@ namespace TerraformTool
             {
                 float uw = 1.0f / spriteNames.Length;
 
-                var spriteInfo = new UITextureAtlas.SpriteInfo()
+                var spriteInfo = new UITextureAtlas.SpriteInfo 
                 {
                     name = spriteNames[i],
                     texture = tex,
@@ -179,10 +177,12 @@ namespace TerraformTool
                 {
                     GameObject gameController = GameObject.FindWithTag("GameController");
                     buildTool = gameController.AddComponent<InGameTerrainTool>();
-                    Texture2D tex = loadTextureFromAssembly("TerraformTool.builtin_brush_4.png", false);
+                    Texture2D tex1 = loadTextureFromAssembly("TerraformTool.builtin_brush_4.png", false);
+                    Texture2D tex2 = loadTextureFromAssembly("TerraformTool.square_brush.png", false);
                     buildTool.m_atlas = terraform_atlas;
                     buildTool.CreateButtons();
-                    buildTool.m_brush = tex;
+                    buildTool.m_brush_circular = tex1;
+                    buildTool.m_brush_square = tex2;
                     buildTool.m_mode = InGameTerrainTool.Mode.Point;
                     buildTool.enabled = false;
 
@@ -217,7 +217,7 @@ namespace TerraformTool
         }
 
 
-        private void TryCopyAttributes(PrefabAI oldAI, PrefabAI newAI)
+        static void TryCopyAttributes(object oldAI, object newAI)
         {
             var oldAIFields =
                 oldAI.GetType()
