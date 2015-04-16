@@ -61,7 +61,7 @@ namespace TerraformTool
                 //{
                 //    return Singleton<InfoManager>.instance.m_properties.m_modeProperties[(int)infoMode].m_activeColorB;
                 //}
-                return base.GetColor(buildingID, ref data, infoMode);
+                return base.GetColor(buildingID, ref data, infoMode);                
             }
             else
             {
