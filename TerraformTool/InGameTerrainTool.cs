@@ -766,6 +766,7 @@ namespace TerraformTool
             int smoothStrength = m_mouseRightDown ? (int)(m_strength * 20 + 2) : (int)(m_strength * 10 + 1);
             //2-6 when left click, 4-12 when right click
 
+			if(!m_strokeInProgress)
             m_startPosition.y = m_rawHeights[(int)ConvertCoords(m_startPosition.z) * 1081 + (int)ConvertCoords(m_startPosition.x)] / 64;
 
             for (int i = minZ; i <= maxZ; i++)
