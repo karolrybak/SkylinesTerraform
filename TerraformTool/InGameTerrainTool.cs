@@ -162,7 +162,7 @@ namespace TerraformTool
                 btPoint = (UIButton)terraformPanel.AddUIComponent(typeof(UIButton));
                 InitButton(btPoint, "TerrainDitch", btSizeLarge);
 
-                
+
                 btShift = (UIButton)terraformPanel.AddUIComponent(typeof(UIButton));
                 InitButton(btShift, "TerrainShift", btSizeLarge);
 
@@ -177,9 +177,6 @@ namespace TerraformTool
 
                 btSand = (UIButton)terraformPanel.AddUIComponent(typeof(UIButton));
                 InitButton(btSand, "ResourceSand", btSizeLarge);
-
-
-
 
                 terraformPanel.Reset();
 
@@ -245,63 +242,115 @@ namespace TerraformTool
 
         public override void RenderOverlay(RenderManager.CameraInfo cameraInfo)
         {
-            while (!Monitor.TryEnter(this.m_dataLock, SimulationManager.SYNCHRONIZE_TIMEOUT))
+            Monitor.Exit(m_dataLock);
+
+            if (m_mouseRayValid && enabled && m_mode != InGameTerrainTool.Mode.ResourceSand)
             {
+                float brushRadius = m_brushSize * 0.5f;
+
+                var colorActive = new Color(1.0f, Mathf.Sqrt(m_strength) * 2.5f - 0.77f, 0f);
+                Color color2 = Color.yellow;
+                var color3 = new Color(0.7f, 0.7f, 0.7f);
+
+                int minX;
+                int minZ;
+                int maxX;
+                int maxZ;
+                GetBrushBounds(out minX, out minZ, out maxX, out maxZ, true);
+
+                Singleton<ToolManager>.instance.m_drawCallData.m_overlayCalls++;
+                OverlayEffect OverlayEffect = Singleton<RenderManager>.instance.OverlayEffect;
+
+                for (int i = minX - 16; i <= maxX + 16; i += 16)
+                {
+                    for (int j = minZ - 16; j <= maxZ + 16; j += 16)
+                    {
+                        if (m_mode == InGameTerrainTool.Mode.Point)
+                        {
+                            if ((i >= minX && i <= maxX) || (j >= minZ && j <= maxZ))
+                            {
+                                if (i < minX || i > maxX || j < minZ || j > maxZ)
+                                {
+                                    OverlayEffect.DrawCircle(cameraInfo, color3, new Vector3(i, 0f, j), 3f, -1f, 1025f, false, true);
+                                }
+                                else
+                                {
+                                    OverlayEffect.DrawCircle(cameraInfo, colorActive, new Vector3(i, 0f, j), 4.5f, -1f, 1025f, false, true);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            float dx = i - m_mousePosition.x;
+                            float dz = j - m_mousePosition.z;
+                            if (dx * dx + dz * dz < (brushRadius + 1) * (brushRadius + 1))
+                            {
+                                if (dx * dx + dz * dz > brushRadius * brushRadius)
+                                {
+                                    OverlayEffect.DrawCircle(cameraInfo, color3, new Vector3(i, 0f, j), 3f, -1f, 1025f, false, true);
+                                }
+                                else
+                                {
+                                    OverlayEffect.DrawCircle(cameraInfo, colorActive, new Vector3(i, 0f, j), 4.5f, -1f, 1025f, false, true);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (m_mode == InGameTerrainTool.Mode.Slope)
+                {
+                    OverlayEffect.DrawCircle(cameraInfo, color2, m_endPosition, 9f, -1f, 1025f, false, true);
+                    if (!m_strokeInProgress)
+                    {
+                        Vector3 pointerPosition = SnapToTerrain(m_mousePosition);
+                        OverlayEffect.DrawCircle(cameraInfo, color2, pointerPosition, 9f, -1f, 1025f, false, true);
+                    }
+                }
+                if (m_mode == InGameTerrainTool.Mode.Level)
+                {
+                    OverlayEffect.DrawCircle(cameraInfo, color2, m_startPosition, 9f, -1f, 1025f, false, true);
+                }
+                
             }
-            Vector3 startPosition;
-            Vector3 mousePosition;
-            try
-            {
-                startPosition = this.m_startPosition;
-                mousePosition = this.m_mousePosition;
-            }
-            finally
-            {
-                Monitor.Exit(this.m_dataLock);
-            }
-
-            var color = Color.red;
-
-            if (m_mode != Mode.Point)
-            {
-                base.RenderOverlay(cameraInfo);
-                return;
-            }
-
-            Vector3 a = mousePosition;
-            Vector3 vector = mousePosition;
-
-            //a.x = (int)((mousePosition.x) / TerrainManager.RAW_CELL_SIZE) * TerrainManager.RAW_CELL_SIZE;
-            //a.z = (int)((mousePosition.z) / TerrainManager.RAW_CELL_SIZE) * TerrainManager.RAW_CELL_SIZE;
-
-            Vector3 a2 = Vector3.forward;
-            Vector3 a3 = new Vector3(a2.z, 0f, -a2.x);
-
-            float num = Mathf.Round(((vector.x - a.x) * a2.x + (vector.z - a.z) * a2.z) * 0.125f) * 8f;
-            float num2 = Mathf.Round(((vector.x - a.x) * a3.x + (vector.z - a.z) * a3.z) * 0.125f) * 8f;
-
-            float num3 = (num < 0f) ? -4f : 4f;
-            float num4 = (num2 < 0f) ? -4f : 4f;
-
-            Quad3 quad = default(Quad3);
-            quad.a = a - a2 * num3 - a3 * num4;
-            quad.b = a - a2 * num3 + a3 * (num2 + num4);
-            quad.c = a + a2 * (num + num3) + a3 * (num2 + num4);
-            quad.d = a + a2 * (num + num3) - a3 * num4;
-
-            if (num3 != num4)
-            {
-                Vector3 b = quad.b;
-                quad.b = quad.d;
-                quad.d = b;
-            }
-            ToolManager toolManager = ToolManager.instance;
-            toolManager.m_drawCallData.m_overlayCalls++;
-            RenderManager.instance.OverlayEffect.DrawQuad(cameraInfo, color, quad, -1f, 1025f, false, true);
 
             base.RenderOverlay(cameraInfo);
         }
 
+        static Vector3 SnapToTerrain(Vector3 mouse)
+        {
+            return new Vector3(Mathf.RoundToInt(mouse.x / 16f), 0f, Mathf.RoundToInt(mouse.z / 16f)) * 16f;
+        }
+
+        static float ConvertCoords(float coords, bool ScreenToTerrain = true)
+        {
+            return ScreenToTerrain ? coords / 16f + 1080 / 2 : (coords - 1080 / 2) * 16f;
+        }
+
+        Vector3 ConvertCoords(Vector3 Pos, bool ScreenToTerrain = true)
+        {
+            return new Vector3
+            {
+                x = ConvertCoords(Pos.x, ScreenToTerrain),
+                z = ConvertCoords(Pos.z, ScreenToTerrain)
+            };
+        }
+
+        void GetBrushBounds(out int minX, out int minZ, out int maxX, out int maxZ, bool screenPos = false)
+        {
+            float brushRadius = m_brushSize / 2;
+            minX = Mathf.Max(Mathf.CeilToInt(ConvertCoords(m_mousePosition.x - brushRadius)), 1);
+            minZ = Mathf.Max(Mathf.CeilToInt(ConvertCoords(m_mousePosition.z - brushRadius)), 1);
+            maxX = Mathf.Min(Mathf.FloorToInt(ConvertCoords(m_mousePosition.x + brushRadius)), 1080 - 1);
+            maxZ = Mathf.Min(Mathf.FloorToInt(ConvertCoords(m_mousePosition.z + brushRadius)), 1080 - 1);
+            if (screenPos)
+            {
+                minX = (int)ConvertCoords(minX, false);
+                minZ = (int)ConvertCoords(minZ, false);
+                maxX = (int)ConvertCoords(maxX, false);
+                maxZ = (int)ConvertCoords(maxZ, false);
+            }
+        }
         public void ResetUndoBuffer()
         {
             this.m_undoList.Clear();
@@ -326,7 +375,7 @@ namespace TerraformTool
             ModeSettings[Mode.Soften] = new ToolSettings(50, 0.2f);
             ModeSettings[Mode.Slope] = new ToolSettings(25, 0.5f);
             ModeSettings[Mode.ResourceSand] = new ToolSettings(50, 0.5f);
-            ModeSettings[Mode.Point] = new ToolSettings(0, 0.5f);
+            ModeSettings[Mode.Point] = new ToolSettings(25, 0.5f);
 
             this.m_undoList = new List<InGameTerrainTool.UndoStroke>();
             if (Singleton<LoadingManager>.exists)
@@ -397,29 +446,28 @@ namespace TerraformTool
             {
                 this.Undo();
             }
-            if(m_mode != Mode.Point)
+
+            if (this.m_IncreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
             {
-                if (this.m_IncreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
-                {
-                    m_brushSize = Mathf.Min(1250, m_brushSize + 5);
-                    UpdateSettings();
-                }
-                if (this.m_DecreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
-                {
-                    m_brushSize = Mathf.Max(25, m_brushSize - 5);
-                    UpdateSettings();
-                }
-                if (this.m_IncreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
-                {
-                    m_strength = Mathf.Min(1, m_strength + 0.05f);
-                    UpdateSettings();
-                }
-                if (this.m_DecreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
-                {
-                    m_strength = Mathf.Max(0.01f, m_strength - 0.05f);
-                    UpdateSettings();
-                }
+                m_brushSize = Mathf.Min(1250, m_brushSize + 5);
+                UpdateSettings();
             }
+            if (this.m_DecreaseBrushSizeKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
+            {
+                m_brushSize = Mathf.Max(25, m_brushSize - 5);
+                UpdateSettings();
+            }
+            if (this.m_IncreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
+            {
+                m_strength = Mathf.Min(1, m_strength + 0.05f);
+                UpdateSettings();
+            }
+            if (this.m_DecreaseBrushStrengthKey.IsPressed(current) && !this.m_undoRequest && !this.m_mouseLeftDown && !this.m_mouseRightDown)
+            {
+                m_strength = Mathf.Max(0.01f, m_strength - 0.05f);
+                UpdateSettings();
+            }
+
         }
 
         protected override void OnEnable()
@@ -736,7 +784,7 @@ namespace TerraformTool
 
             ushort maxHeight = 0;
             ushort minHeight = ushort.MaxValue;
-            
+
             for (int i = minZ - 1; i <= maxZ + 1; i++)
             {
                 for (int j = minX - 1; j <= maxX + 1; j++)
@@ -764,7 +812,7 @@ namespace TerraformTool
             {
                 targetHeightStroke = (ushort)(targetHeight - diff);
             }
-                            
+
             int m_applyCost = 0;
             bool outOfMoney = false;
 
@@ -827,10 +875,19 @@ namespace TerraformTool
                 num7 = 1f / num7;
             }
             float num8 = 20f;
-            int minX = Mathf.Max((int)((mousePosition.x - brushRadius) / TerrainManager.RAW_CELL_SIZE + (float)TerrainManager.RAW_RESOLUTION * 0.5f), 0);
-            int minZ = Mathf.Max((int)((mousePosition.z - brushRadius) / TerrainManager.RAW_CELL_SIZE + (float)TerrainManager.RAW_RESOLUTION * 0.5f), 0);
-            int maxX = Mathf.Min((int)((mousePosition.x + brushRadius) / TerrainManager.RAW_CELL_SIZE + (float)TerrainManager.RAW_RESOLUTION * 0.5f) + 1, TerrainManager.RAW_RESOLUTION);
-            int maxZ = Mathf.Min((int)((mousePosition.z + brushRadius) / TerrainManager.RAW_CELL_SIZE + (float)TerrainManager.RAW_RESOLUTION * 0.5f) + 1, TerrainManager.RAW_RESOLUTION);
+            
+            float a = TerrainManager.RAW_CELL_SIZE;
+            int b = TerrainManager.RAW_RESOLUTION;
+
+            Vector3 mouse = this.m_mousePosition;
+            mouse.y = 0f;
+
+            Vector3 coords = new Vector3(b / 2, 0f, b / 2);
+
+            int minX = Mathf.Max(Mathf.CeilToInt((mouse.x - brushRadius) / a + coords.x), 2);
+            int minZ = Mathf.Max(Mathf.CeilToInt((mouse.z - brushRadius) / a + coords.z), 2);
+            int maxX = Mathf.Min(Mathf.FloorToInt((mouse.x + brushRadius) / a + coords.x), b - 2);
+            int maxZ = Mathf.Min(Mathf.FloorToInt((mouse.z + brushRadius) / a + coords.z), b - 2); 
             if (this.m_mode == InGameTerrainTool.Mode.Shift)
             {
                 if (this.m_mouseRightDown)
