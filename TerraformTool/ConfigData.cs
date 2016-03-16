@@ -10,7 +10,7 @@ namespace TerraformTool
         public bool Free = false;
         public static string GetConfigPath()
         {            
-            string text = Path.Combine(DataLocation.modsPath, "TerraformTool\\TerraformTool.xml");
+            string text = Path.Combine(DataLocation.modsPath, "TerraformTool", "TerraformTool.xml");
             if (!Directory.Exists(Path.GetDirectoryName(text)))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(text));
